@@ -98,8 +98,8 @@ function App() {
       <header className="header">
         <div className="header-inner">
           <div className="header-left">
-            <h1>Job Search Agent</h1>
-            <p className="subtitle">Sonny R. Gonzalez — VP of Marketing — Remote Only — $150K+ Target</p>
+            <h1>Job Search <span className="brand">Agent</span></h1>
+            <p className="subtitle">Sonny R. Gonzalez — VP of Marketing — Remote Only — $150K+ Target — Powered by ai<strong>for</strong>roi.co</p>
           </div>
           <div className="header-right">
             <button className="legend-toggle" onClick={() => setShowLegend(!showLegend)}>
@@ -318,6 +318,10 @@ function App() {
           </div>
         </div>
       )}
+
+      <div className="powered-by">
+        Built by <a href="https://aiforroi.co" target="_blank" rel="noopener">ai<strong>for</strong>roi.co</a> — AI automation that proves ROI on camera, every week.
+      </div>
     </div>
   )
 }
