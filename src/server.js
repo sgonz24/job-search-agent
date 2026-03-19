@@ -138,23 +138,21 @@ app.get('/api/runs', (req, res) => {
 let applyInProgress = false;
 let applyResults = null;
 
-// Apply to a single job by ID
+// Apply to a single job by ID (smart routing: API first, then Playwright)
 app.post('/api/jobs/:id/apply', async (req, res) => {
   const job = stmts.getJobById.get(req.params.id);
   if (!job) return res.status(404).json({ error: 'Job not found' });
   if (!job.url) return res.status(400).json({ error: 'Job has no URL' });
 
-  res.json({ message: 'Apply started', jobId: job.id });
+  res.json({ message: 'Apply started', jobId: job.id, url: job.url });
 
   try {
-    const { applyToJob } = require('./apply-agent/apply-engine');
-    const { chromium } = require('playwright');
-    const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
-    const result = await applyToJob(job, browser);
-    await browser.close();
-    console.log('[server] Single apply result:', JSON.stringify(result, null, 2));
+    const { smartApply } = require('./apply-agent/direct-apply');
+    const result = await smartApply(job);
+    console.log('[server] Smart apply result:', JSON.stringify(result, null, 2));
   } catch (err) {
-    console.error('[server] Single apply failed:', err.message);
+    console.error('[server] Apply failed:', err.message);
+    stmts.logActivity.run('error', `Apply failed for job #${job.id}: ${err.message}`, job.id);
   }
 });
 
@@ -171,8 +169,24 @@ app.post('/api/apply/auto', async (req, res) => {
   res.json({ message: 'Auto-apply started', tiers, maxApps });
 
   try {
-    const { autoApply } = require('./apply-agent/apply-engine');
-    applyResults = await autoApply({ tiers, maxApps });
+    const { batchSmartApply } = require('./apply-agent/direct-apply');
+
+    // Get unapplied jobs from specified tiers
+    let jobs = [];
+    for (const tier of tiers) {
+      const tierJobs = stmts.getJobsByTier.all(tier).filter(j => j.status === 'new' || j.status === 'saved');
+      jobs.push(...tierJobs);
+    }
+    jobs.sort((a, b) => b.fit_score - a.fit_score);
+    jobs = jobs.filter(j => j.url && j.url.startsWith('http'));
+
+    if (jobs.length === 0) {
+      applyResults = { total: 0, successful: 0, failed: 0, results: [], message: 'No unapplied jobs in selected tiers' };
+      applyInProgress = false;
+      return;
+    }
+
+    applyResults = await batchSmartApply(jobs, { maxApps });
     console.log('[server] Auto-apply complete:', {
       total: applyResults.total,
       successful: applyResults.successful,
@@ -180,7 +194,7 @@ app.post('/api/apply/auto', async (req, res) => {
     });
   } catch (err) {
     console.error('[server] Auto-apply failed:', err.message);
-    applyResults = { error: err.message };
+    applyResults = { error: err.message, total: 0, successful: 0, failed: 0, results: [] };
   } finally {
     applyInProgress = false;
   }
