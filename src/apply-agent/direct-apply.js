@@ -104,8 +104,31 @@ async function linkedInEasyApply(job, browser) {
     }
 
     if (!easyApplyClicked) {
-      // May not be an Easy Apply job — could be external
-      result.errors.push('No Easy Apply button found — may require external application');
+      // Check if there's an external "Apply" link instead
+      log(job.id, 'LinkedIn: No Easy Apply — checking for external apply link');
+      try {
+        const externalBtn = await page.locator('button:has-text("Apply"), a:has-text("Apply")').first();
+        if (await externalBtn.isVisible({ timeout: 2000 })) {
+          const href = await externalBtn.evaluate(e => e.href || e.closest('a')?.href || '');
+          if (href && !href.includes('linkedin.com')) {
+            log(job.id, `LinkedIn: Following external apply link → ${href.substring(0, 80)}`);
+            await context.close();
+            // Re-route to browser form fill for the external URL
+            const newJob = { ...job, url: href };
+            const extBrowser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+            try {
+              const { browserApply } = require('./direct-apply');
+              const extResult = await browserApply(newJob, extBrowser);
+              return extResult;
+            } finally {
+              await extBrowser.close();
+            }
+          }
+        }
+      } catch {}
+
+      result.errors.push('No Easy Apply button — this job requires external application');
+      log(job.id, 'LinkedIn: SKIPPED — no Easy Apply available');
       await screenshot(page, job.id, 'li-no-easy-apply');
       await context.close();
       return result;
@@ -261,6 +284,7 @@ async function linkedInEasyApply(job, browser) {
 
     if (!result.success) {
       result.errors.push('Could not complete LinkedIn Easy Apply flow');
+      log(job.id, `LinkedIn: FAILED — could not complete Easy Apply (filled ${result.fieldsFilled.length} fields)`);
       await screenshot(page, job.id, 'li-stuck');
     }
 
