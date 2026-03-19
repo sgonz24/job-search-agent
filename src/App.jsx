@@ -16,6 +16,7 @@ function App() {
   const [copied, setCopied] = useState(false)
   const [applyRunning, setApplyRunning] = useState(false)
   const [applyResults, setApplyResults] = useState(null)
+  const [applyProgress, setApplyProgress] = useState(null) // { current, total, currentJob }
   const [showApplyPanel, setShowApplyPanel] = useState(false)
   const [applyTiers, setApplyTiers] = useState(['A', 'B'])
   const [applyMax, setApplyMax] = useState(5)
@@ -61,12 +62,34 @@ function App() {
   }
 
   const triggerAutoApply = async () => {
-    setApplyRunning(true); setApplyResults(null)
+    setApplyRunning(true); setApplyResults(null); setApplyProgress({ current: 0, total: applyMax, currentJob: 'Starting agent...' })
     await fetch(`${API}/api/apply/auto`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tiers: applyTiers, maxApps: applyMax }) })
+    let lastCount = 0
     const poll = setInterval(async () => {
-      const res = await fetch(`${API}/api/apply/status`); const data = await res.json()
-      if (!data.inProgress) { clearInterval(poll); setApplyRunning(false); setApplyResults(data.results); fetchJobs(); fetchStats(); fetchActivity() }
-    }, 8000)
+      try {
+        const [statusRes, activityRes] = await Promise.all([
+          fetch(`${API}/api/apply/status`),
+          fetch(`${API}/api/activity?limit=5`),
+        ])
+        const data = await statusRes.json()
+        const acts = await activityRes.json()
+        // Find latest apply activity for progress
+        const applyActs = acts.filter(a => a.type === 'apply')
+        if (applyActs.length > 0) {
+          const latest = applyActs[0].message
+          const doneCount = (data.results?.results || []).length
+          if (doneCount !== lastCount) { lastCount = doneCount; fetchJobs() }
+          setApplyProgress({ current: doneCount, total: applyMax, currentJob: latest })
+        }
+        if (!data.inProgress) {
+          clearInterval(poll)
+          setApplyRunning(false)
+          setApplyResults(data.results)
+          setApplyProgress(null)
+          fetchJobs(); fetchStats(); fetchActivity()
+        }
+      } catch {}
+    }, 5000)
   }
 
   const copyText = (text) => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) }
@@ -151,35 +174,80 @@ function App() {
       {/* ── Auto-Apply Panel ── */}
       {showApplyPanel && (
         <div className="apply-panel">
-          <h3>AI Auto-Apply Agent</h3>
-          <p className="apply-desc">Opens each job, fills the application form, uploads your resume, answers custom questions, and submits. LinkedIn jobs use Easy Apply with your session. Greenhouse/Lever use direct form fill. 30-75s pacing between apps.</p>
-          <div className="apply-controls">
-            <div className="apply-setting">
-              <label>Tiers:</label>
-              <div className="filter-group">
-                {['A', 'B', 'C'].map(t => (
-                  <button key={t} className={`fbtn ${applyTiers.includes(t) ? 'active' : ''}`}
-                    style={applyTiers.includes(t) ? { background: tierColor(t), color: '#000', borderColor: tierColor(t) } : {}}
-                    onClick={() => setApplyTiers(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>
-                    {t}
-                  </button>
-                ))}
+          {!applyRunning && !applyResults && (
+            <>
+              <h3>AI Auto-Apply Agent</h3>
+              <p className="apply-desc">Select which tiers to apply to, set a max, and launch. The agent will open each job, fill forms, upload your resume, and submit — one at a time with 30-75s pauses between applications.</p>
+              <div className="apply-controls">
+                <div className="apply-setting">
+                  <label>Apply to:</label>
+                  <div className="filter-group">
+                    {['A', 'B', 'C'].map(t => (
+                      <button key={t} className={`fbtn ${applyTiers.includes(t) ? 'active' : ''}`}
+                        style={applyTiers.includes(t) ? { background: tierColor(t), color: '#000', borderColor: tierColor(t) } : {}}
+                        onClick={() => setApplyTiers(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>
+                        Tier {t}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="apply-setting">
+                  <label>Max apps:</label>
+                  <select className="apply-select" value={applyMax} onChange={e => setApplyMax(Number(e.target.value))}>
+                    {[1, 3, 5, 10, 15, 25].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <button className="apply-btn" onClick={triggerAutoApply} disabled={applyTiers.length === 0}>
+                  Launch Agent ({applyTiers.join(' + ')} tiers, max {applyMax})
+                </button>
               </div>
+            </>
+          )}
+
+          {applyRunning && applyProgress && (
+            <div className="apply-live">
+              <div className="apply-live-header">
+                <div className="apply-pulse" />
+                <h3>Agent is applying... {applyProgress.current}/{applyProgress.total}</h3>
+              </div>
+              <div className="apply-progress-bar">
+                <div className="apply-progress-fill" style={{ width: `${(applyProgress.current / applyProgress.total) * 100}%` }} />
+              </div>
+              <p className="apply-live-status">{applyProgress.currentJob}</p>
+              <p className="apply-live-hint">This takes 30-75 seconds per application. Do not close this page.</p>
             </div>
-            <div className="apply-setting">
-              <label>Max:</label>
-              <select className="apply-select" value={applyMax} onChange={e => setApplyMax(Number(e.target.value))}>
-                {[1, 3, 5, 10, 15, 25].map(n => <option key={n} value={n}>{n}</option>)}
-              </select>
-            </div>
-            <button className={`apply-btn ${applyRunning ? 'running' : ''}`} onClick={triggerAutoApply} disabled={applyRunning || applyTiers.length === 0}>
-              {applyRunning ? 'Applying...' : `Launch (${applyTiers.join('+')} tiers, max ${applyMax})`}
-            </button>
-          </div>
-          {applyResults && (
-            <div className="apply-results">
-              <span className="apply-stat success">{applyResults.successful} Applied</span>
-              <span className="apply-stat fail">{applyResults.failed} Failed</span>
+          )}
+
+          {applyResults && !applyRunning && (
+            <div className="apply-done">
+              <h3>Agent Complete</h3>
+              <div className="apply-done-stats">
+                <div className="apply-done-stat success">
+                  <span className="apply-done-n">{applyResults.successful}</span>
+                  <span>Applied</span>
+                </div>
+                <div className="apply-done-stat fail">
+                  <span className="apply-done-n">{applyResults.failed}</span>
+                  <span>Failed</span>
+                </div>
+                <div className="apply-done-stat total">
+                  <span className="apply-done-n">{applyResults.total}</span>
+                  <span>Total</span>
+                </div>
+              </div>
+              {applyResults.results?.length > 0 && (
+                <div className="apply-done-list">
+                  {applyResults.results.map((r, i) => (
+                    <div key={i} className={`apply-done-item ${r.success ? 'ok' : 'err'}`}>
+                      <span className="apply-done-icon">{r.success ? 'Applied' : 'Failed'}</span>
+                      <span className="apply-done-job">{r.title} @ {r.company}</span>
+                      {r.fieldsFilled?.length > 0 && <span className="apply-done-fields">{r.fieldsFilled.length} fields</span>}
+                      {!r.success && r.errors?.[0] && <span className="apply-done-err">{r.errors[0].substring(0, 60)}</span>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <button className="apply-btn" style={{ marginTop: '0.75rem' }} onClick={() => { setApplyResults(null); setShowApplyPanel(false) }}>Done</button>
             </div>
           )}
         </div>
