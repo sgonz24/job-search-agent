@@ -7,124 +7,110 @@ function App() {
   const [jobs, setJobs] = useState([])
   const [stats, setStats] = useState(null)
   const [activity, setActivity] = useState([])
-  const [filter, setFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [sourceFilter, setSourceFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [selectedJob, setSelectedJob] = useState(null)
   const [searchRunning, setSearchRunning] = useState(false)
   const [tab, setTab] = useState('cover_letter')
-  const [showLegend, setShowLegend] = useState(false)
   const [copied, setCopied] = useState(false)
   const [applyRunning, setApplyRunning] = useState(false)
   const [applyResults, setApplyResults] = useState(null)
   const [showApplyPanel, setShowApplyPanel] = useState(false)
-  const [applyTiers, setApplyTiers] = useState(['A'])
+  const [applyTiers, setApplyTiers] = useState(['A', 'B'])
   const [applyMax, setApplyMax] = useState(5)
+  const [view, setView] = useState('board') // 'board' or 'list'
 
   const fetchJobs = useCallback(async () => {
     try {
       const params = new URLSearchParams()
-      if (filter !== 'all') params.set('tier', filter)
       if (statusFilter !== 'all') params.set('status', statusFilter)
       if (search) params.set('search', search)
-      const res = await fetch(`${API}/api/jobs?${params}`)
+      const res = await fetch(`${API}/api/jobs?${params}&limit=500`)
       const data = await res.json()
       setJobs(data.jobs || [])
-    } catch (err) {
-      console.error('Failed to fetch jobs:', err)
-    }
-  }, [filter, statusFilter, search])
+    } catch (err) { console.error('Failed to fetch jobs:', err) }
+  }, [statusFilter, search])
 
   const fetchStats = async () => {
-    try {
-      const res = await fetch(`${API}/api/stats`)
-      const data = await res.json()
-      setStats(data)
-    } catch (err) {
-      console.error('Failed to fetch stats:', err)
-    }
+    try { const res = await fetch(`${API}/api/stats`); setStats(await res.json()) } catch {}
   }
-
   const fetchActivity = async () => {
-    try {
-      const res = await fetch(`${API}/api/activity?limit=20`)
-      const data = await res.json()
-      setActivity(data)
-    } catch (err) {
-      console.error('Failed to fetch activity:', err)
-    }
+    try { const res = await fetch(`${API}/api/activity?limit=20`); setActivity(await res.json()) } catch {}
   }
 
   useEffect(() => { fetchJobs() }, [fetchJobs])
-  useEffect(() => { fetchStats(); fetchActivity() }, [])
+  useEffect(() => { fetchStats(); fetchActivity(); const i = setInterval(() => { fetchStats(); fetchActivity() }, 30000); return () => clearInterval(i) }, [])
 
   const triggerSearch = async () => {
     setSearchRunning(true)
     await fetch(`${API}/api/search`, { method: 'POST' })
     const poll = setInterval(async () => {
-      const res = await fetch(`${API}/api/search/status`)
-      const data = await res.json()
-      if (!data.inProgress) {
-        clearInterval(poll)
-        setSearchRunning(false)
-        fetchJobs()
-        fetchStats()
-        fetchActivity()
-      }
+      const res = await fetch(`${API}/api/search/status`); const data = await res.json()
+      if (!data.inProgress) { clearInterval(poll); setSearchRunning(false); fetchJobs(); fetchStats(); fetchActivity() }
     }, 5000)
   }
 
   const updateStatus = async (id, status) => {
-    await fetch(`${API}/api/jobs/${id}/status`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status }),
-    })
-    fetchJobs()
-    fetchStats()
+    await fetch(`${API}/api/jobs/${id}/status`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status }) })
+    fetchJobs(); fetchStats()
   }
 
-  const copyText = (text) => {
-    navigator.clipboard.writeText(text)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  // Auto-apply to a single job
   const applyToJob = async (jobId) => {
-    await fetch(`${API}/api/jobs/${jobId}/apply`, { method: 'POST' })
-    fetchActivity()
+    await fetch(`${API}/api/jobs/${jobId}/apply`, { method: 'POST' }); fetchActivity()
   }
 
-  // Batch auto-apply
   const triggerAutoApply = async () => {
-    setApplyRunning(true)
-    setApplyResults(null)
-    await fetch(`${API}/api/apply/auto`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tiers: applyTiers, maxApps: applyMax }),
-    })
+    setApplyRunning(true); setApplyResults(null)
+    await fetch(`${API}/api/apply/auto`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tiers: applyTiers, maxApps: applyMax }) })
     const poll = setInterval(async () => {
-      const res = await fetch(`${API}/api/apply/status`)
-      const data = await res.json()
-      if (!data.inProgress) {
-        clearInterval(poll)
-        setApplyRunning(false)
-        setApplyResults(data.results)
-        fetchJobs()
-        fetchStats()
-        fetchActivity()
-      }
+      const res = await fetch(`${API}/api/apply/status`); const data = await res.json()
+      if (!data.inProgress) { clearInterval(poll); setApplyRunning(false); setApplyResults(data.results); fetchJobs(); fetchStats(); fetchActivity() }
     }, 8000)
   }
 
-  const tierColor = (tier) => tier === 'A' ? '#D4A017' : tier === 'B' ? '#888' : '#444'
+  const copyText = (text) => { navigator.clipboard.writeText(text); setCopied(true); setTimeout(() => setCopied(false), 2000) }
 
-  const statusLabel = (s) => ({
-    new: 'New', saved: 'Saved', applied: 'Applied', interviewing: 'Interview',
-    rejected: 'Rejected', offer: 'OFFER!', hidden: 'Hidden',
-  }[s] || s)
+  const tierColor = (tier) => tier === 'A' ? '#D4A017' : tier === 'B' ? '#888' : '#555'
+  const statusLabel = (s) => ({ new: 'New', saved: 'Saved', applied: 'Applied', interviewing: 'Interview', rejected: 'Rejected', offer: 'OFFER!', hidden: 'Hidden' }[s] || s)
+
+  // Filter jobs
+  const filtered = jobs.filter(j => {
+    if (sourceFilter === 'linkedin') return (j.url || '').includes('linkedin.com')
+    if (sourceFilter === 'greenhouse') return (j.url || '').includes('greenhouse')
+    if (sourceFilter === 'lever') return (j.url || '').includes('lever.co')
+    if (sourceFilter === 'other') return !(j.url || '').includes('linkedin') && !(j.url || '').includes('greenhouse') && !(j.url || '').includes('lever')
+    return true
+  })
+
+  const tierA = filtered.filter(j => j.tier === 'A')
+  const tierB = filtered.filter(j => j.tier === 'B')
+  const tierC = filtered.filter(j => j.tier === 'C')
+
+  const applyMethod = (job) => {
+    const url = (job.url || '').toLowerCase()
+    if (url.includes('greenhouse')) return 'Greenhouse'
+    if (url.includes('lever.co')) return 'Lever'
+    if (url.includes('linkedin.com')) return 'LinkedIn Easy Apply'
+    return 'External'
+  }
+
+  const JobCard = ({ job }) => (
+    <div className={`jcard ${selectedJob?.id === job.id ? 'selected' : ''}`} onClick={() => { setSelectedJob(job); setTab('cover_letter') }}>
+      <div className="jcard-top">
+        <span className="jscore-pill" style={{ background: tierColor(job.tier) }}>{job.fit_score}</span>
+        {job.status !== 'new' && <span className={`jstatus s-${job.status}`}>{statusLabel(job.status)}</span>}
+        <span className="japply-method">{applyMethod(job)}</span>
+      </div>
+      <h3 className="jtitle">{job.title}</h3>
+      <p className="jcompany">{job.company}</p>
+      {job.location && <p className="jloc">{job.location}</p>}
+      {job.salary && <p className="jsalary">{job.salary}</p>}
+      {job.match_reasons?.length > 0 && (
+        <div className="jtags">{job.match_reasons.slice(0, 2).map((r, i) => <span key={i} className="jtag">{r}</span>)}</div>
+      )}
+    </div>
+  )
 
   return (
     <div className="app">
@@ -133,21 +119,14 @@ function App() {
         <div className="header-inner">
           <div className="header-left">
             <h1>Job Search <span className="brand">Agent</span></h1>
-            <p className="subtitle">Sonny R. Gonzalez — VP of Marketing — Remote Only — $150K+ Target — Powered by ai<strong>for</strong>roi.co</p>
+            <p className="subtitle">Sonny R. Gonzalez | VP of Marketing | Remote | $150K+ | Powered by ai<strong>for</strong>roi.co</p>
           </div>
           <div className="header-right">
-            <button className="legend-toggle" onClick={() => setShowLegend(!showLegend)}>
-              {showLegend ? 'Hide' : 'Scoring'} Legend
-            </button>
             <button className="apply-toggle" onClick={() => setShowApplyPanel(!showApplyPanel)}>
               Auto-Apply
             </button>
-            <button
-              className={`search-btn ${searchRunning ? 'running' : ''}`}
-              onClick={triggerSearch}
-              disabled={searchRunning}
-            >
-              {searchRunning ? 'Searching...' : 'Run Search Now'}
+            <button className={`search-btn ${searchRunning ? 'running' : ''}`} onClick={triggerSearch} disabled={searchRunning}>
+              {searchRunning ? 'Scanning...' : 'Scan Jobs'}
             </button>
           </div>
         </div>
@@ -157,114 +136,50 @@ function App() {
       {stats?.stats && (
         <div className="stats-bar">
           <div className="stat"><span className="stat-n">{stats.stats.total}</span><span className="stat-l">Total</span></div>
-          <div className="stat orange"><span className="stat-n">{stats.stats.tier_a}</span><span className="stat-l">Tier A</span></div>
-          <div className="stat blue"><span className="stat-n">{stats.stats.tier_b}</span><span className="stat-l">Tier B</span></div>
+          <div className="stat gold"><span className="stat-n">{stats.stats.tier_a}</span><span className="stat-l">Tier A</span></div>
+          <div className="stat"><span className="stat-n">{stats.stats.tier_b}</span><span className="stat-l">Tier B</span></div>
           <div className="stat"><span className="stat-n">{stats.stats.tier_c}</span><span className="stat-l">Tier C</span></div>
           <div className="stat-divider" />
           <div className="stat green"><span className="stat-n">{stats.stats.applied}</span><span className="stat-l">Applied</span></div>
           <div className="stat teal"><span className="stat-n">{stats.stats.interviewing}</span><span className="stat-l">Interviews</span></div>
           <div className="stat gold"><span className="stat-n">{stats.stats.offers}</span><span className="stat-l">Offers</span></div>
-        </div>
-      )}
-
-      {/* ── Scoring Legend ── */}
-      {showLegend && (
-        <div className="legend-panel">
-          <h3>Scoring Logic — How Jobs Are Ranked Against Your Profile</h3>
-          <div className="legend-grid">
-            <div className="legend-col">
-              <h4>Positive Signals</h4>
-              <table>
-                <tbody>
-                  <tr><td className="pts">+30-35</td><td>VP / CMO / SVP in title</td><td className="match">10+ yrs exec marketing</td></tr>
-                  <tr><td className="pts">+10</td><td>Marketing in title</td><td className="match">Dir. Marketing @ SolarTech, CMO @ Ember Pro</td></tr>
-                  <tr><td className="pts">+15</td><td>Remote position</td><td className="match">Remote only requirement</td></tr>
-                  <tr><td className="pts">+15</td><td>AI / Automation mentioned</td><td className="match">Top 1% AI — 10+ production systems</td></tr>
-                  <tr><td className="pts">+10</td><td>Automation keyword</td><td className="match">Builds autonomous agent workflows</td></tr>
-                  <tr><td className="pts">+8</td><td>GTM / Go-to-market</td><td className="match">Built GTM from scratch @ Ember Pro</td></tr>
-                  <tr><td className="pts">+8</td><td>Growth / Demand Gen</td><td className="match">300% YOY sales growth @ Eevelle</td></tr>
-                  <tr><td className="pts">+5-10</td><td>B2B + B2C combined</td><td className="match">Both across solar, hospitality, blockchain</td></tr>
-                  <tr><td className="pts">+5</td><td>P&L / Budget mgmt</td><td className="match">$60M P&L @ Welk Resort Group</td></tr>
-                  <tr><td className="pts">+5-10</td><td>Salary listed $150K+</td><td className="match">$150K minimum target</td></tr>
-                  <tr><td className="pts">+3-10</td><td>Industry match (SaaS, Tech, etc.)</td><td className="match">Solar, defense tech, blockchain, hospitality</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="legend-col">
-              <h4>Negative Signals</h4>
-              <table>
-                <tbody>
-                  <tr className="neg"><td className="pts">-20</td><td>On-site / In-office only</td><td className="match">Excluded — remote only</td></tr>
-                  <tr className="neg"><td className="pts">-30</td><td>Junior / Entry / Intern</td><td className="match">Excluded — exec level</td></tr>
-                  <tr className="neg"><td className="pts">-20</td><td>Coordinator / Specialist</td><td className="match">Excluded — too junior</td></tr>
-                  <tr className="neg"><td className="pts">-25</td><td>Assistant / Associate</td><td className="match">Excluded — too junior</td></tr>
-                  <tr className="neg"><td className="pts">-5</td><td>Hybrid (no remote)</td><td className="match">Penalized — prefer fully remote</td></tr>
-                </tbody>
-              </table>
-              <h4>Tier Thresholds</h4>
-              <div className="tier-legend-items">
-                <div><span className="dot" style={{background:'#D4A017'}}/> <strong>Tier A (70+)</strong> — Apply immediately</div>
-                <div><span className="dot" style={{background:'#888'}}/> <strong>Tier B (50-69)</strong> — Worth pursuing</div>
-                <div><span className="dot" style={{background:'#444'}}/> <strong>Tier C (30-49)</strong> — Review manually</div>
-                <div><span className="dot" style={{background:'#dc2626'}}/> <strong>Tier D (&lt;30)</strong> — Filtered out</div>
-              </div>
-            </div>
-          </div>
+          <div className="stat-divider" />
+          <div className="stat"><span className="stat-n mini">{stats.lastRun ? new Date(stats.lastRun.started_at + 'Z').toLocaleTimeString() : '—'}</span><span className="stat-l">Last Scan</span></div>
         </div>
       )}
 
       {/* ── Auto-Apply Panel ── */}
       {showApplyPanel && (
         <div className="apply-panel">
-          <div className="apply-panel-header">
-            <h3>AI Auto-Apply Agent</h3>
-            <p className="apply-desc">The agent opens each job posting, detects the ATS (Greenhouse, Lever, Workable, etc.), fills the form with your profile, uploads your resume, generates AI-powered answers to custom questions, and submits — with human-like pacing between applications.</p>
-          </div>
+          <h3>AI Auto-Apply Agent</h3>
+          <p className="apply-desc">Opens each job, fills the application form, uploads your resume, answers custom questions, and submits. LinkedIn jobs use Easy Apply with your session. Greenhouse/Lever use direct form fill. 30-75s pacing between apps.</p>
           <div className="apply-controls">
             <div className="apply-setting">
-              <label>Apply to tiers:</label>
+              <label>Tiers:</label>
               <div className="filter-group">
-                {['A', 'B'].map(t => (
-                  <button key={t}
-                    className={`fbtn ${applyTiers.includes(t) ? 'active' : ''}`}
-                    style={applyTiers.includes(t) ? { background: tierColor(t), color: '#fff', borderColor: tierColor(t) } : {}}
-                    onClick={() => {
-                      setApplyTiers(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
-                    }}>
-                    Tier {t}
+                {['A', 'B', 'C'].map(t => (
+                  <button key={t} className={`fbtn ${applyTiers.includes(t) ? 'active' : ''}`}
+                    style={applyTiers.includes(t) ? { background: tierColor(t), color: '#000', borderColor: tierColor(t) } : {}}
+                    onClick={() => setApplyTiers(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}>
+                    {t}
                   </button>
                 ))}
               </div>
             </div>
             <div className="apply-setting">
-              <label>Max applications:</label>
+              <label>Max:</label>
               <select className="apply-select" value={applyMax} onChange={e => setApplyMax(Number(e.target.value))}>
                 {[1, 3, 5, 10, 15, 25].map(n => <option key={n} value={n}>{n}</option>)}
               </select>
             </div>
-            <button
-              className={`apply-btn ${applyRunning ? 'running' : ''}`}
-              onClick={triggerAutoApply}
-              disabled={applyRunning || applyTiers.length === 0}
-            >
-              {applyRunning ? 'Agent Applying...' : `Launch Auto-Apply (${applyTiers.join('+')} tiers, max ${applyMax})`}
+            <button className={`apply-btn ${applyRunning ? 'running' : ''}`} onClick={triggerAutoApply} disabled={applyRunning || applyTiers.length === 0}>
+              {applyRunning ? 'Applying...' : `Launch (${applyTiers.join('+')} tiers, max ${applyMax})`}
             </button>
           </div>
           {applyResults && (
             <div className="apply-results">
-              <div className="apply-stat-row">
-                <span className="apply-stat success">{applyResults.successful} Applied</span>
-                <span className="apply-stat fail">{applyResults.failed} Failed</span>
-                <span className="apply-stat total">{applyResults.total} Total</span>
-              </div>
-              {applyResults.results?.map((r, i) => (
-                <div key={i} className={`apply-result-item ${r.success ? 'ok' : 'err'}`}>
-                  <span>{r.success ? '[OK]' : '[FAIL]'}</span>
-                  <span>Job #{r.jobId} — {r.atsType}</span>
-                  <span>{r.fieldsFilled?.length || 0} fields filled</span>
-                  {r.errors?.length > 0 && <span className="apply-err">{r.errors[0]}</span>}
-                </div>
-              ))}
+              <span className="apply-stat success">{applyResults.successful} Applied</span>
+              <span className="apply-stat fail">{applyResults.failed} Failed</span>
             </div>
           )}
         </div>
@@ -274,106 +189,128 @@ function App() {
       <div className="controls">
         <div className="filter-row">
           <div className="filter-group">
-            {['all', 'A', 'B', 'C'].map(t => (
-              <button key={t}
-                className={`fbtn ${filter === t ? 'active' : ''}`}
-                style={filter === t && t !== 'all' ? { background: tierColor(t), color: '#fff', borderColor: tierColor(t) } : {}}
-                onClick={() => setFilter(t)}>
-                {t === 'all' ? 'All Tiers' : `Tier ${t}`}
-              </button>
+            {[['all','All Sources'],['linkedin','LinkedIn'],['greenhouse','Greenhouse'],['lever','Lever'],['other','Other']].map(([k,l]) => (
+              <button key={k} className={`fbtn ${sourceFilter === k ? 'active' : ''}`} onClick={() => setSourceFilter(k)}>{l}</button>
             ))}
           </div>
           <div className="filter-group">
-            {['all', 'new', 'saved', 'applied', 'interviewing'].map(s => (
-              <button key={s} className={`fbtn ${statusFilter === s ? 'active' : ''}`}
-                onClick={() => setStatusFilter(s)}>
-                {s === 'all' ? 'All Status' : statusLabel(s)}
-              </button>
+            {[['all','All'],['new','New'],['saved','Saved'],['applied','Applied'],['interviewing','Interviews']].map(([k,l]) => (
+              <button key={k} className={`fbtn ${statusFilter === k ? 'active' : ''}`} onClick={() => setStatusFilter(k)}>{l}</button>
             ))}
           </div>
-          <input
-            type="text"
-            placeholder="Search title or company..."
-            className="search-input"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="filter-group">
+            <button className={`fbtn ${view === 'board' ? 'active' : ''}`} onClick={() => setView('board')}>Board</button>
+            <button className={`fbtn ${view === 'list' ? 'active' : ''}`} onClick={() => setView('list')}>List</button>
+          </div>
+          <input type="text" placeholder="Search..." className="search-input" value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
 
-      {/* ── Main Layout ── */}
-      <div className="main">
-        <div className="job-list">
-          {jobs.length === 0 && (
-            <div className="empty">
-              <p>No jobs yet. Hit <strong>Run Search Now</strong> to scan LinkedIn, Indeed, RemoteOK, WeWorkRemotely, and BuiltIn.</p>
+      {/* ── 3-Column Board View ── */}
+      {view === 'board' ? (
+        <div className="board">
+          <div className="board-col">
+            <div className="board-header" style={{ borderColor: '#D4A017' }}>
+              <span className="board-tier" style={{ color: '#D4A017' }}>TIER A</span>
+              <span className="board-count">{tierA.length}</span>
+              <span className="board-label">Apply Now</span>
             </div>
-          )}
-          {jobs.map(job => (
-            <div key={job.id}
-              className={`jcard ${selectedJob?.id === job.id ? 'selected' : ''} tier-${job.tier}`}
-              onClick={() => { setSelectedJob(job); setTab('cover_letter') }}
-            >
-              <div className="jcard-top">
-                <span className="tbadge" style={{ background: tierColor(job.tier) }}>{job.tier}</span>
-                <span className="jscore">{job.fit_score}</span>
-                {job.status !== 'new' && <span className={`jstatus s-${job.status}`}>{statusLabel(job.status)}</span>}
+            <div className="board-cards">
+              {tierA.length === 0 && <p className="board-empty">No Tier A matches yet</p>}
+              {tierA.map(job => <JobCard key={job.id} job={job} />)}
+            </div>
+          </div>
+          <div className="board-col">
+            <div className="board-header" style={{ borderColor: '#888' }}>
+              <span className="board-tier" style={{ color: '#fff' }}>TIER B</span>
+              <span className="board-count">{tierB.length}</span>
+              <span className="board-label">Worth Pursuing</span>
+            </div>
+            <div className="board-cards">
+              {tierB.length === 0 && <p className="board-empty">No Tier B matches yet</p>}
+              {tierB.map(job => <JobCard key={job.id} job={job} />)}
+            </div>
+          </div>
+          <div className="board-col">
+            <div className="board-header" style={{ borderColor: '#444' }}>
+              <span className="board-tier" style={{ color: '#888' }}>TIER C</span>
+              <span className="board-count">{tierC.length}</span>
+              <span className="board-label">Review</span>
+            </div>
+            <div className="board-cards">
+              {tierC.length === 0 && <p className="board-empty">No Tier C matches yet</p>}
+              {tierC.slice(0, 50).map(job => <JobCard key={job.id} job={job} />)}
+              {tierC.length > 50 && <p className="board-more">+{tierC.length - 50} more</p>}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="list-view">
+          {filtered.map(job => <JobCard key={job.id} job={job} />)}
+        </div>
+      )}
+
+      {/* ── Detail Drawer ── */}
+      {selectedJob && (
+        <div className="drawer-overlay" onClick={(e) => { if (e.target === e.currentTarget) setSelectedJob(null) }}>
+          <div className="drawer">
+            <button className="drawer-close" onClick={() => setSelectedJob(null)}>X</button>
+
+            <div className="drawer-head">
+              <span className="tbadge lg" style={{ background: tierColor(selectedJob.tier) }}>{selectedJob.tier}</span>
+              <div>
+                <h2>{selectedJob.title}</h2>
+                <p className="drawer-company">{selectedJob.company}</p>
               </div>
-              <h3 className="jtitle">{job.title}</h3>
-              <p className="jcompany">{job.company}</p>
-              <div className="jmeta">
-                <span>{job.location}</span>
-                <span className="jsource">{job.source}</span>
-                {job.salary && <span className="jsalary">{job.salary}</span>}
+              <span className="drawer-score">{selectedJob.fit_score}<small>/100</small></span>
+            </div>
+
+            <div className="drawer-meta">
+              <div className="drawer-meta-row">
+                <span className="drawer-label">Location</span>
+                <span>{selectedJob.location || 'Remote'}</span>
               </div>
-              <div className="jbar"><div className="jfill" style={{ width: `${job.fit_score}%`, background: tierColor(job.tier) }}/></div>
-              {job.match_reasons?.length > 0 && (
-                <div className="jtags">
-                  {job.match_reasons.slice(0, 3).map((r, i) => <span key={i} className="jtag">{r}</span>)}
+              <div className="drawer-meta-row">
+                <span className="drawer-label">Source</span>
+                <span>{selectedJob.source}</span>
+              </div>
+              <div className="drawer-meta-row">
+                <span className="drawer-label">Apply Via</span>
+                <span className="drawer-apply-method">{applyMethod(selectedJob)}</span>
+              </div>
+              {selectedJob.salary && (
+                <div className="drawer-meta-row">
+                  <span className="drawer-label">Salary</span>
+                  <span className="jsalary">{selectedJob.salary}</span>
+                </div>
+              )}
+              {selectedJob.date_posted && (
+                <div className="drawer-meta-row">
+                  <span className="drawer-label">Posted</span>
+                  <span>{selectedJob.date_posted}</span>
                 </div>
               )}
             </div>
-          ))}
-        </div>
 
-        {/* ── Detail Panel ── */}
-        {selectedJob && (
-          <div className="detail">
-            <div className="detail-head">
-              <span className="tbadge lg" style={{ background: tierColor(selectedJob.tier) }}>{selectedJob.tier}</span>
-              <div className="detail-info">
-                <h2>{selectedJob.title}</h2>
-                <p>{selectedJob.company} — {selectedJob.location}</p>
-              </div>
-              <span className="detail-score">{selectedJob.fit_score}<small>/100</small></span>
-            </div>
-
-            <div className="detail-actions">
-              {selectedJob.url && (
-                <a href={selectedJob.url} target="_blank" rel="noopener" className="btn-primary">View Job Posting</a>
-              )}
+            <div className="drawer-actions">
+              {selectedJob.url && <a href={selectedJob.url} target="_blank" rel="noopener" className="btn-primary">View Posting</a>}
               {selectedJob.url && selectedJob.status !== 'applied' && (
-                <button className="btn-apply" onClick={() => applyToJob(selectedJob.id)}>
-                  AI Auto-Apply
-                </button>
+                <button className="btn-apply" onClick={() => applyToJob(selectedJob.id)}>Auto-Apply</button>
               )}
-              <span className="detail-src">via {selectedJob.source}</span>
-              {selectedJob.salary && <span className="jsalary">{selectedJob.salary}</span>}
             </div>
 
             {selectedJob.match_reasons?.length > 0 && (
-              <div className="detail-block">
-                <h4>Why This Matches</h4>
+              <div className="drawer-section">
+                <h4>Match Reasons</h4>
                 <div className="jtags">{selectedJob.match_reasons.map((r, i) => <span key={i} className="jtag">{r}</span>)}</div>
               </div>
             )}
 
-            <div className="detail-block">
-              <h4>Status</h4>
+            <div className="drawer-section">
+              <h4>Pipeline Status</h4>
               <div className="status-btns">
                 {['new', 'saved', 'applied', 'interviewing', 'rejected', 'offer', 'hidden'].map(s => (
-                  <button key={s}
-                    className={`sbtn ${selectedJob.status === s ? 'active' : ''} s-${s}`}
+                  <button key={s} className={`sbtn ${selectedJob.status === s ? 'active' : ''} s-${s}`}
                     onClick={() => { updateStatus(selectedJob.id, s); setSelectedJob({...selectedJob, status: s}) }}>
                     {statusLabel(s)}
                   </button>
@@ -381,31 +318,25 @@ function App() {
               </div>
             </div>
 
-            <div className="detail-block">
+            <div className="drawer-section">
               <div className="outreach-tabs">
-                {[
-                  ['cover_letter', 'Cover Letter'],
-                  ['linkedin_msg', 'LinkedIn Message'],
-                  ['email_msg', 'Email Outreach'],
-                ].map(([key, label]) => (
+                {[['cover_letter', 'Cover Letter'], ['linkedin_msg', 'LinkedIn'], ['email_msg', 'Email']].map(([key, label]) => (
                   <button key={key} className={`otab ${tab === key ? 'active' : ''}`} onClick={() => setTab(key)}>{label}</button>
                 ))}
               </div>
               <div className="outreach-body">
                 <pre>{selectedJob[tab]}</pre>
-                <button className="copy-btn" onClick={() => copyText(selectedJob[tab])}>
-                  {copied ? 'Copied!' : 'Copy to Clipboard'}
-                </button>
+                <button className="copy-btn" onClick={() => copyText(selectedJob[tab])}>{copied ? 'Copied!' : 'Copy'}</button>
               </div>
             </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* ── Activity Log ── */}
       {activity.length > 0 && (
         <div className="activity">
-          <h3>Recent Activity</h3>
+          <h3>Activity Feed</h3>
           <div className="activity-list">
             {activity.slice(0, 8).map((a, i) => (
               <div key={i} className="aitem">
