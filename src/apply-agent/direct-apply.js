@@ -29,6 +29,252 @@ function screenshot(page, jobId, label) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
+// LINKEDIN EASY APPLY — uses session cookie to apply as the user
+// ══════════════════════════════════════════════════════════════════════
+
+async function linkedInEasyApply(job, browser) {
+  const result = { success: false, method: 'linkedin-easy-apply', fieldsFilled: [], errors: [], jobId: job.id };
+  const LI_COOKIE = process.env.LINKEDIN_LI_AT;
+
+  if (!LI_COOKIE) {
+    result.errors.push('No LinkedIn session cookie (LINKEDIN_LI_AT) configured');
+    return result;
+  }
+
+  let page;
+  try {
+    // Create context with LinkedIn cookie injected
+    const context = await browser.newContext({
+      viewport: { width: 1440, height: 900 },
+      userAgent: UA,
+      locale: 'en-US',
+      timezoneId: 'America/Los_Angeles',
+    });
+
+    // Inject the li_at session cookie
+    await context.addCookies([{
+      name: 'li_at',
+      value: LI_COOKIE,
+      domain: '.linkedin.com',
+      path: '/',
+      httpOnly: true,
+      secure: true,
+      sameSite: 'None',
+    }]);
+
+    page = await context.newPage();
+
+    // Navigate to the job posting
+    log(job.id, `LinkedIn: Opening ${job.title} @ ${job.company}`);
+    await page.goto(job.url, { waitUntil: 'domcontentloaded', timeout: 20000 });
+    await delay(3000, 5000);
+
+    // Check if we're logged in (look for nav or feed elements)
+    const isLoggedIn = await page.locator('.global-nav, .feed-identity-module, nav[aria-label]').count() > 0;
+    if (!isLoggedIn) {
+      result.errors.push('LinkedIn session expired — cookie may be stale');
+      await screenshot(page, job.id, 'li-not-logged-in');
+      await context.close();
+      return result;
+    }
+    log(job.id, 'LinkedIn: Logged in successfully');
+
+    // Find and click Easy Apply button
+    let easyApplyClicked = false;
+    const easyApplySelectors = [
+      'button.jobs-apply-button',
+      'button[aria-label*="Easy Apply"]',
+      'button:has-text("Easy Apply")',
+      'button:has-text("Apply")',
+    ];
+    for (const sel of easyApplySelectors) {
+      try {
+        const btn = await page.locator(sel).first();
+        if (await btn.isVisible({ timeout: 2000 })) {
+          const text = await btn.textContent();
+          if (text.toLowerCase().includes('easy apply')) {
+            await delay(500, 1500);
+            await btn.click();
+            easyApplyClicked = true;
+            log(job.id, 'LinkedIn: Clicked Easy Apply');
+            break;
+          }
+        }
+      } catch {}
+    }
+
+    if (!easyApplyClicked) {
+      // May not be an Easy Apply job — could be external
+      result.errors.push('No Easy Apply button found — may require external application');
+      await screenshot(page, job.id, 'li-no-easy-apply');
+      await context.close();
+      return result;
+    }
+
+    await delay(2000, 3000);
+
+    // LinkedIn Easy Apply is a multi-step modal
+    // Step through up to 6 pages (contact → resume → questions → review → submit)
+    for (let step = 0; step < 6; step++) {
+      log(job.id, `LinkedIn: Step ${step + 1}`);
+      await delay(1000, 2000);
+
+      // Fill any visible phone input (LinkedIn sometimes asks for it)
+      try {
+        const phoneInput = await page.locator('input[name*="phoneNumber"], input[id*="phoneNumber"]').first();
+        if (await phoneInput.isVisible({ timeout: 500 })) {
+          const val = await phoneInput.evaluate(e => e.value);
+          if (!val) {
+            await phoneInput.fill(PROFILE.phone);
+            result.fieldsFilled.push('Phone');
+          }
+        }
+      } catch {}
+
+      // Fill any empty text inputs
+      const inputs = await page.locator('.jobs-easy-apply-modal input[type="text"]:visible, .jobs-easy-apply-modal input:not([type]):visible').all();
+      for (const input of inputs) {
+        try {
+          const val = await input.evaluate(e => e.value);
+          if (val) continue;
+          const label = await getLabel(page, input);
+          if (!label) continue;
+          const q = label.toLowerCase();
+          let answer = null;
+          if (q.includes('city') || q.includes('location')) answer = 'San Marcos, CA';
+          else if (q.includes('linkedin')) answer = 'https://www.linkedin.com/in/sonnygonzalez';
+          else if (q.includes('website') || q.includes('portfolio')) answer = 'https://aiforroi.co';
+          else if (q.includes('salary') || q.includes('compensation')) answer = '175000';
+          else if (q.includes('year') && q.includes('experience')) answer = '10';
+          else if (q.includes('title')) answer = 'VP of Marketing';
+          if (answer) {
+            await input.fill(answer);
+            result.fieldsFilled.push(label);
+          }
+        } catch {}
+      }
+
+      // Fill any dropdowns
+      const selects = await page.locator('.jobs-easy-apply-modal select:visible').all();
+      for (const sel of selects) {
+        try {
+          const label = await getLabel(page, sel);
+          if (!label) continue;
+          const q = label.toLowerCase();
+          const options = await sel.evaluate(e => Array.from(e.options).map(o => ({ val: o.value, text: o.text.trim() })));
+
+          let pick = null;
+          if (q.includes('authorized') || q.includes('eligible')) pick = options.find(o => o.text.toLowerCase().includes('yes'));
+          else if (q.includes('sponsor')) pick = options.find(o => o.text.toLowerCase().includes('no'));
+          else if (q.includes('experience')) pick = options.find(o => o.text.includes('10') || o.text.toLowerCase().includes('executive'));
+          else if (q.includes('gender') || q.includes('race') || q.includes('veteran') || q.includes('disability'))
+            pick = options.find(o => o.text.toLowerCase().includes('prefer not') || o.text.toLowerCase().includes('decline'));
+
+          if (pick) {
+            await sel.selectOption(pick.val);
+            result.fieldsFilled.push(label);
+          }
+        } catch {}
+      }
+
+      // Fill textareas
+      const textareas = await page.locator('.jobs-easy-apply-modal textarea:visible').all();
+      for (const ta of textareas) {
+        try {
+          const val = await ta.evaluate(e => e.value);
+          if (val) continue;
+          await ta.fill(generateCoverSnippet(job));
+          result.fieldsFilled.push('Additional info');
+        } catch {}
+      }
+
+      // Handle radio buttons (Yes/No questions)
+      const radioGroups = await page.locator('.jobs-easy-apply-modal fieldset:visible').all();
+      for (const group of radioGroups) {
+        try {
+          const legend = await group.locator('legend, span.fb-dash-form-element__label').first().textContent().catch(() => '');
+          if (!legend) continue;
+          const q = legend.toLowerCase();
+          let pickYes = q.includes('authorized') || q.includes('eligible') || q.includes('commute') || q.includes('willing');
+          let pickNo = q.includes('sponsor') || q.includes('visa');
+          const target = pickYes ? 'Yes' : pickNo ? 'No' : null;
+          if (target) {
+            const radio = await group.locator(`label:has-text("${target}")`).first();
+            if (await radio.isVisible({ timeout: 500 })) {
+              await radio.click();
+              result.fieldsFilled.push(legend.substring(0, 50));
+            }
+          }
+        } catch {}
+      }
+
+      // Upload resume if file input appears
+      try {
+        const fileInput = await page.locator('.jobs-easy-apply-modal input[type="file"]').first();
+        if (await fileInput.isVisible({ timeout: 500 }) && fs.existsSync(RESUME_PATH)) {
+          await fileInput.setInputFiles(RESUME_PATH);
+          result.fieldsFilled.push('Resume');
+          log(job.id, 'LinkedIn: Resume uploaded');
+          await delay(2000, 3000);
+        }
+      } catch {}
+
+      // Check for "Review" or "Submit" button (final step)
+      try {
+        const submitBtn = await page.locator('button[aria-label*="Submit application"], button:has-text("Submit application")').first();
+        if (await submitBtn.isVisible({ timeout: 1000 })) {
+          await delay(500, 1500);
+          await submitBtn.click();
+          await delay(3000, 5000);
+
+          // Check for success
+          const successModal = await page.locator(':has-text("application was sent"), :has-text("Application submitted"), :has-text("applied to")').count();
+          if (successModal > 0) {
+            result.success = true;
+            stmts.markApplied.run(job.id);
+            log(job.id, `SUCCESS: LinkedIn Easy Apply — ${job.title} @ ${job.company}`);
+            await screenshot(page, job.id, 'li-success');
+          } else {
+            await screenshot(page, job.id, 'li-post-submit');
+            // Might still be success — LinkedIn shows a dismissible modal
+            result.success = true;
+            stmts.markApplied.run(job.id);
+            log(job.id, `LinkedIn Easy Apply submitted (unconfirmed) — ${job.title} @ ${job.company}`);
+          }
+          break;
+        }
+      } catch {}
+
+      // Click "Next" or "Continue" to advance to next step
+      try {
+        const nextBtn = await page.locator('button[aria-label*="Continue"], button[aria-label*="Next"], button:has-text("Next"), button:has-text("Continue"), button:has-text("Review")').first();
+        if (await nextBtn.isVisible({ timeout: 1000 })) {
+          await nextBtn.click();
+          await delay(1500, 2500);
+          continue;
+        }
+      } catch {}
+
+      // If no Next or Submit found, we might be stuck
+      break;
+    }
+
+    if (!result.success) {
+      result.errors.push('Could not complete LinkedIn Easy Apply flow');
+      await screenshot(page, job.id, 'li-stuck');
+    }
+
+    await context.close();
+  } catch (err) {
+    result.errors.push(err.message);
+    log(job.id, `LinkedIn FAILED: ${err.message}`);
+    if (page) await screenshot(page, job.id, 'li-error').catch(() => {});
+  }
+
+  return result;
+}
+
+// ══════════════════════════════════════════════════════════════════════
 // CORE: Fill any Greenhouse/Lever/generic form via Playwright
 // Proven working — tested against real Contentful Greenhouse form
 // ══════════════════════════════════════════════════════════════════════
@@ -379,7 +625,13 @@ async function batchSmartApply(jobs, options = {}) {
       const job = jobs[i];
       log(job.id, `[${i + 1}/${maxApps}] ${job.title} @ ${job.company}`);
 
-      const result = await browserApply(job, browser);
+      const url = (job.url || '').toLowerCase();
+      let result;
+      if (url.includes('linkedin.com') && process.env.LINKEDIN_LI_AT) {
+        result = await linkedInEasyApply(job, browser);
+      } else {
+        result = await browserApply(job, browser);
+      }
       results.push({ jobId: job.id, title: job.title, company: job.company, ...result });
 
       if (result.success) successful++;
@@ -401,15 +653,20 @@ async function batchSmartApply(jobs, options = {}) {
   return summary;
 }
 
-// Single job apply (used by /api/jobs/:id/apply)
+// Single job apply — routes LinkedIn vs everything else
 async function smartApply(job) {
   const browser = await chromium.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox'],
   });
   try {
-    const result = await browserApply(job, browser);
-    return result;
+    const url = (job.url || '').toLowerCase();
+    if (url.includes('linkedin.com') && process.env.LINKEDIN_LI_AT) {
+      log(job.id, `Routing → LinkedIn Easy Apply`);
+      return await linkedInEasyApply(job, browser);
+    }
+    log(job.id, `Routing → Browser form fill`);
+    return await browserApply(job, browser);
   } finally {
     await browser.close();
   }
