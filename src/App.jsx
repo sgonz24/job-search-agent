@@ -119,7 +119,7 @@ function App() {
     }, 8000)
   }
 
-  const tierColor = (tier) => tier === 'A' ? '#EF8B22' : tier === 'B' ? '#3170B3' : '#6b7280'
+  const tierColor = (tier) => tier === 'A' ? '#D4A017' : tier === 'B' ? '#888' : '#444'
 
   const statusLabel = (s) => ({
     new: 'New', saved: 'Saved', applied: 'Applied', interviewing: 'Interview',
@@ -203,9 +203,9 @@ function App() {
               </table>
               <h4>Tier Thresholds</h4>
               <div className="tier-legend-items">
-                <div><span className="dot" style={{background:'#EF8B22'}}/> <strong>Tier A (70+)</strong> — Apply immediately</div>
-                <div><span className="dot" style={{background:'#3170B3'}}/> <strong>Tier B (50-69)</strong> — Worth pursuing</div>
-                <div><span className="dot" style={{background:'#6b7280'}}/> <strong>Tier C (30-49)</strong> — Review manually</div>
+                <div><span className="dot" style={{background:'#D4A017'}}/> <strong>Tier A (70+)</strong> — Apply immediately</div>
+                <div><span className="dot" style={{background:'#888'}}/> <strong>Tier B (50-69)</strong> — Worth pursuing</div>
+                <div><span className="dot" style={{background:'#444'}}/> <strong>Tier C (30-49)</strong> — Review manually</div>
                 <div><span className="dot" style={{background:'#dc2626'}}/> <strong>Tier D (&lt;30)</strong> — Filtered out</div>
               </div>
             </div>
