@@ -298,6 +298,31 @@ async function searchGreenhouseBoards() {
     'coursera', 'duolingo', 'masterclass', 'udemy', 'skillshare',
     // Food / Delivery
     'doordash', 'instacart', 'gopuff', 'sweetgreen', 'cava',
+    // Blockchain / Web3 / Crypto
+    'chainalysis', 'fireblocks', 'alchemy', 'consensys', 'polygon-technology',
+    'dapper-labs', 'opensea', 'uniswap-labs', 'aave', 'circle',
+    'blockfi', 'ripple', 'stellar', 'solana-labs', 'near-protocol',
+    'immutable', 'animoca-brands', 'yuga-labs', 'ledger',
+    'anchorage-digital', 'bitgo', 'gemini', 'kraken', 'blockchain-com',
+    'axie-infinity', 'the-sandbox-game', 'decentraland',
+    // Marketing / AdTech / MarTech
+    'hubspot', 'marketo', 'pardot', 'braze', 'iterable',
+    'customer-io', 'sailthru', 'leanplum', 'onesignal',
+    'appsflyer', 'branch', 'adjust', 'singular', 'kochava',
+    'the-trade-desk', 'pubmatic', 'magnite', 'index-exchange',
+    'sprinklr', 'hootsuite', 'sproutsocial', 'later', 'buffer',
+    'optimizely', 'vwo', 'ab-tasty', 'dynamic-yield',
+    'segment', 'tealium', 'lytics', 'blueconic', 'treasure-data',
+    // More tech companies
+    'okta', 'crowdstrike', 'paloalto', 'zscaler', 'fortinet',
+    'elastic', 'sumo-logic', 'new-relic', 'dynatrace',
+    'snowflake', 'databricks', 'confluent', 'cockroachdb',
+    'singlestore', 'timescale', 'neo4j', 'couchbase',
+    'docker', 'gitlab', 'github', 'bitbucket', 'circleci',
+    'twitch', 'discord', 'reddit', 'pinterest', 'snap',
+    'uber', 'lyft', 'grab', 'gojek', 'rappi',
+    'dropbox', 'box', 'notion', 'evernote', 'todoist',
+    'zoom', 'slack', 'ringcentral', 'dialpad', 'vonage',
   ];
   const allJobs = [];
   for (const board of boards) {
@@ -359,6 +384,14 @@ async function searchLeverBoards() {
     // Marketing / AdTech
     'branch', 'appsflyer', 'braze', 'iterable', 'customer-io',
     'sendgrid', 'mailchimp', 'constant-contact',
+    // Blockchain / Web3
+    'phantom', 'magic-eden', 'moonpay', 'transak', 'wyre',
+    'sui', 'aptos-labs', 'layerzero-labs', 'eigenlayer',
+    'offchain-labs', 'matter-labs', 'starkware', 'aztec',
+    // More tech
+    'vercel', 'supabase', 'planetscale', 'turso', 'neon',
+    'render', 'railway', 'fly-io', 'deno', 'bun',
+    'figma', 'framer', 'webflow', 'bubble', 'retool',
   ];
   const allJobs = [];
   for (const board of boards) {

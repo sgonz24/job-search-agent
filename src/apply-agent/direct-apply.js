@@ -104,31 +104,44 @@ async function linkedInEasyApply(job, browser) {
     }
 
     if (!easyApplyClicked) {
-      // Check if there's an external "Apply" link instead
+      // Check if there's an "Apply" button that goes to external ATS
       log(job.id, 'LinkedIn: No Easy Apply — checking for external apply link');
       try {
-        const externalBtn = await page.locator('button:has-text("Apply"), a:has-text("Apply")').first();
-        if (await externalBtn.isVisible({ timeout: 2000 })) {
-          const href = await externalBtn.evaluate(e => e.href || e.closest('a')?.href || '');
-          if (href && !href.includes('linkedin.com')) {
-            log(job.id, `LinkedIn: Following external apply link → ${href.substring(0, 80)}`);
-            await context.close();
-            // Re-route to browser form fill for the external URL
-            const newJob = { ...job, url: href };
-            const extBrowser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
-            try {
-              const { browserApply } = require('./direct-apply');
-              const extResult = await browserApply(newJob, extBrowser);
-              return extResult;
-            } finally {
-              await extBrowser.close();
+        const applyBtns = await page.locator('button:has-text("Apply"), a:has-text("Apply")').all();
+        for (const btn of applyBtns) {
+          try {
+            if (!await btn.isVisible({ timeout: 1000 })) continue;
+            // Click it — might open a new tab or redirect
+            const [newPage] = await Promise.all([
+              context.waitForEvent('page', { timeout: 5000 }).catch(() => null),
+              btn.click(),
+            ]);
+            await delay(2000, 3000);
+
+            // Check if a new tab opened with an ATS form
+            const targetPage = newPage || page;
+            const targetUrl = targetPage.url();
+            if (targetUrl.includes('greenhouse') || targetUrl.includes('lever.co') ||
+                targetUrl.includes('workable') || targetUrl.includes('ashby') ||
+                !targetUrl.includes('linkedin.com')) {
+              log(job.id, `LinkedIn: Redirected to external form → ${targetUrl.substring(0, 80)}`);
+              // Close LinkedIn context and apply via browser on the external URL
+              const externalUrl = targetUrl;
+              await context.close();
+              const newJob = { ...job, url: externalUrl };
+              const extBrowser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+              try {
+                return await browserApply(newJob, extBrowser);
+              } finally {
+                await extBrowser.close();
+              }
             }
-          }
+          } catch {}
         }
       } catch {}
 
-      result.errors.push('No Easy Apply button — this job requires external application');
-      log(job.id, 'LinkedIn: SKIPPED — no Easy Apply available');
+      result.errors.push('No Easy Apply or external apply found');
+      log(job.id, 'LinkedIn: SKIPPED — no apply method available');
       await screenshot(page, job.id, 'li-no-easy-apply');
       await context.close();
       return result;
