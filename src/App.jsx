@@ -97,38 +97,55 @@ function App() {
   const tierColor = (tier) => tier === 'A' ? '#D4A017' : tier === 'B' ? '#888' : '#555'
   const statusLabel = (s) => ({ new: 'New', saved: 'Saved', applied: 'Applied', interviewing: 'Interview', rejected: 'Rejected', offer: 'OFFER!', hidden: 'Hidden' }[s] || s)
 
+  // Determine if a job can be auto-applied
+  const canAutoApply = (job) => {
+    if (job.easy_apply || job.apply_method === 'easy_apply') return true
+    const url = (job.url || '').toLowerCase()
+    if (url.includes('greenhouse.io')) return true
+    if (url.includes('lever.co')) return true
+    return false
+  }
+
+  const applyMethod = (job) => {
+    if (job.easy_apply || job.apply_method === 'easy_apply') return 'Easy Apply'
+    const url = (job.url || '').toLowerCase()
+    if (url.includes('greenhouse')) return 'Greenhouse'
+    if (url.includes('lever.co')) return 'Lever'
+    return 'Manual'
+  }
+
   // Filter jobs
   const filtered = jobs.filter(j => {
+    if (sourceFilter === 'auto') return canAutoApply(j)
+    if (sourceFilter === 'manual') return !canAutoApply(j)
     if (sourceFilter === 'linkedin') return (j.url || '').includes('linkedin.com')
     if (sourceFilter === 'greenhouse') return (j.url || '').includes('greenhouse')
-    if (sourceFilter === 'lever') return (j.url || '').includes('lever.co')
-    if (sourceFilter === 'other') return !(j.url || '').includes('linkedin') && !(j.url || '').includes('greenhouse') && !(j.url || '').includes('lever')
     return true
   })
+
+  const autoApplyJobs = filtered.filter(j => canAutoApply(j))
+  const manualJobs = filtered.filter(j => !canAutoApply(j))
 
   const tierA = filtered.filter(j => j.tier === 'A')
   const tierB = filtered.filter(j => j.tier === 'B')
   const tierC = filtered.filter(j => j.tier === 'C')
-
-  const applyMethod = (job) => {
-    const url = (job.url || '').toLowerCase()
-    if (url.includes('greenhouse')) return 'Greenhouse'
-    if (url.includes('lever.co')) return 'Lever'
-    if (url.includes('linkedin.com')) return 'LinkedIn Easy Apply'
-    return 'External'
-  }
 
   const JobCard = ({ job }) => (
     <div className={`jcard ${selectedJob?.id === job.id ? 'selected' : ''}`} onClick={() => { setSelectedJob(job); setTab('cover_letter') }}>
       <div className="jcard-top">
         <span className="jscore-pill" style={{ background: tierColor(job.tier) }}>{job.fit_score}</span>
         {job.status !== 'new' && <span className={`jstatus s-${job.status}`}>{statusLabel(job.status)}</span>}
-        <span className="japply-method">{applyMethod(job)}</span>
+        <span className={`japply-method ${canAutoApply(job) ? 'auto' : 'manual'}`}>
+          {canAutoApply(job) ? 'Auto' : 'Manual'}
+        </span>
       </div>
       <h3 className="jtitle">{job.title}</h3>
       <p className="jcompany">{job.company}</p>
       {job.location && <p className="jloc">{job.location}</p>}
       {job.salary && <p className="jsalary">{job.salary}</p>}
+      {!canAutoApply(job) && job.url && (
+        <a href={job.url} target="_blank" rel="noopener" className="jcard-link" onClick={e => e.stopPropagation()}>View & Apply</a>
+      )}
       {job.match_reasons?.length > 0 && (
         <div className="jtags">{job.match_reasons.slice(0, 2).map((r, i) => <span key={i} className="jtag">{r}</span>)}</div>
       )}
@@ -257,8 +274,10 @@ function App() {
       <div className="controls">
         <div className="filter-row">
           <div className="filter-group">
-            {[['all','All Sources'],['linkedin','LinkedIn'],['greenhouse','Greenhouse'],['lever','Lever'],['other','Other']].map(([k,l]) => (
-              <button key={k} className={`fbtn ${sourceFilter === k ? 'active' : ''}`} onClick={() => setSourceFilter(k)}>{l}</button>
+            {[['all','All Jobs'],['auto','Auto-Apply'],['manual','Manual Apply'],['linkedin','LinkedIn'],['greenhouse','Greenhouse']].map(([k,l]) => (
+              <button key={k} className={`fbtn ${sourceFilter === k ? 'active' : ''} ${k === 'auto' ? 'fbtn-auto' : ''}`} onClick={() => setSourceFilter(k)}>
+                {l}{k === 'auto' ? ` (${jobs.filter(canAutoApply).length})` : k === 'manual' ? ` (${jobs.filter(j => !canAutoApply(j)).length})` : ''}
+              </button>
             ))}
           </div>
           <div className="filter-group">
@@ -362,8 +381,11 @@ function App() {
 
             <div className="drawer-actions">
               {selectedJob.url && <a href={selectedJob.url} target="_blank" rel="noopener" className="btn-primary">View Posting</a>}
-              {selectedJob.url && selectedJob.status !== 'applied' && (
+              {canAutoApply(selectedJob) && selectedJob.status !== 'applied' && (
                 <button className="btn-apply" onClick={() => applyToJob(selectedJob.id)}>Auto-Apply</button>
+              )}
+              {!canAutoApply(selectedJob) && selectedJob.url && (
+                <a href={selectedJob.url} target="_blank" rel="noopener" className="btn-manual">Go Apply Manually</a>
               )}
             </div>
 

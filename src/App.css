@@ -122,7 +122,12 @@
 .jstatus.s-interviewing { background: #083344; color: #22d3ee; }
 .jstatus.s-offer { background: #3d2800; color: #F0C040; }
 .jstatus.s-saved { background: #1a1a1a; color: #D4A017; }
-.japply-method { font-size: 0.6rem; color: #444; margin-left: auto; }
+.japply-method { font-size: 0.6rem; color: #444; margin-left: auto; padding: 0.1rem 0.35rem; border-radius: 4px; border: 1px solid #222; }
+.japply-method.auto { color: #4ade80; border-color: #052e16; background: #052e16; }
+.japply-method.manual { color: #888; border-color: #222; }
+.jcard-link { display: inline-block; font-size: 0.7rem; color: #D4A017; text-decoration: none; margin-top: 0.3rem; padding: 0.2rem 0.5rem; border: 1px solid rgba(212,160,23,0.3); border-radius: 4px; transition: all 0.15s; }
+.jcard-link:hover { background: #D4A017; color: #000; }
+.fbtn-auto.active { background: #052e16 !important; border-color: #4ade80 !important; color: #4ade80 !important; }
 
 .jtitle { font-size: 0.85rem; font-weight: 600; color: #e5e5e5; line-height: 1.25; }
 .jcompany { font-size: 0.75rem; color: #888; margin: 0.1rem 0; }
@@ -159,6 +164,8 @@
 .btn-primary:hover { border-color: #D4A017; }
 .btn-apply { padding: 0.5rem 1rem; border-radius: 6px; border: 1.5px solid #D4A017; background: transparent; color: #D4A017; font-size: 0.82rem; font-weight: 600; cursor: pointer; transition: all 0.15s; }
 .btn-apply:hover { background: #D4A017; color: #000; }
+.btn-manual { padding: 0.5rem 1rem; border-radius: 6px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 0.82rem; font-weight: 600; text-decoration: none; transition: all 0.15s; }
+.btn-manual:hover { border-color: #D4A017; color: #D4A017; }
 
 .drawer-section { margin-bottom: 1.25rem; }
 .drawer-section h4 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: #444; margin-bottom: 0.4rem; }
