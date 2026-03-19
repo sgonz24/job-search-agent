@@ -39,8 +39,6 @@ db.exec(`
     email_msg TEXT DEFAULT '',
     applied_at TEXT,
     notes TEXT DEFAULT '',
-    easy_apply INTEGER DEFAULT 0,
-    apply_method TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
     UNIQUE(title, company)
@@ -73,6 +71,10 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_jobs_score ON jobs(fit_score DESC);
   CREATE INDEX IF NOT EXISTS idx_jobs_created ON jobs(created_at DESC);
 `);
+
+// Migration: add new columns to existing tables
+try { db.exec(`ALTER TABLE jobs ADD COLUMN easy_apply INTEGER DEFAULT 0`); } catch {}
+try { db.exec(`ALTER TABLE jobs ADD COLUMN apply_method TEXT DEFAULT ''`); } catch {}
 
 // ── Prepared Statements ─────────────────────────────────────────────
 
