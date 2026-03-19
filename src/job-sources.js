@@ -135,31 +135,28 @@ async function searchBuiltIn(query) {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 6. WELLFOUND (formerly AngelList) — JSON API
+// 6. WELLFOUND (formerly AngelList) — HTML scrape
 // ══════════════════════════════════════════════════════════════════════
 
 async function searchWellfound() {
   try {
-    const res = await fetch('https://wellfound.com/api/search/jobs', {
-      method: 'POST',
-      headers: { ...HEADERS, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: 'VP Marketing',
-        page: 1,
-        per_page: 50,
-        remote: true,
-        role: 'marketing',
-        seniority: ['Senior', 'Lead', 'Executive'],
-      }),
-    });
+    const res = await fetch('https://wellfound.com/role/marketing/vp-of-marketing', { headers: HEADERS, redirect: 'follow' });
     if (!res.ok) throw new Error(`Status ${res.status}`);
-    const data = await res.json();
-    const results = data.results || data.jobs || data.data || [];
-    return results.map(j => ({
-      source: 'Wellfound', title: j.title || j.name || '', company: j.company?.name || j.startup?.name || '',
-      location: 'Remote', url: j.url || j.slug ? `https://wellfound.com/jobs/${j.slug}` : '',
-      salary: j.salary ? `$${j.salary.min}-$${j.salary.max}` : '', query: 'VP Marketing',
-    })).filter(j => j.title);
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('[data-test="StartupResult"], .styles_component__0QhET').each((i, el) => {
+      const title = $(el).find('[data-test="JobTitle"], .styles_title__xpQDw').text().trim();
+      const company = $(el).find('[data-test="StartupName"], .styles_name__Omaui').text().trim();
+      const salary = $(el).find('[data-test="Salary"], .styles_salary__il2fl').text().trim();
+      const link = $(el).find('a[href*="/jobs/"]').attr('href') || '';
+      if (title) jobs.push({
+        source: 'Wellfound', title, company, location: 'Remote',
+        url: link.startsWith('http') ? link : link ? `https://wellfound.com${link}` : '',
+        salary, query: 'VP Marketing',
+      });
+    });
+    return jobs;
   } catch (err) { console.error(`  Wellfound error: ${err.message}`); return []; }
 }
 
@@ -243,10 +240,31 @@ async function searchFlexJobs(query) {
 async function searchGreenhouseBoards() {
   // Known companies with public Greenhouse boards and marketing VP roles
   const boards = [
+    // Top-tier tech companies with public Greenhouse boards
     'figma', 'stripe', 'notion', 'datadog', 'hashicorp', 'gitlab',
     'cloudflare', 'airtable', 'dbt-labs', 'snyk', 'grafana-labs',
     'canva', 'miro', 'loom', 'calendly', 'ramp', 'brex', 'plaid',
     'segment', 'twilio', 'hubspot', 'zapier', 'webflow', 'vercel',
+    // SaaS / Growth companies
+    'amplitude', 'mixpanel', 'intercom', 'drift', 'gong',
+    'outreach', '6sense', 'mutinyhq', 'hightouch', 'census',
+    'drata', 'vanta', 'ironclad', 'docebo', 'sendbird',
+    'launchdarkly', 'split', 'flagsmith', 'contentful', 'storyblok',
+    // AI / ML companies
+    'anthropic', 'openai', 'cohere', 'jasper', 'copy-ai',
+    'runway', 'stability-ai', 'huggingface', 'scale-ai', 'labelbox',
+    'weights-and-biases', 'together-ai', 'modal-labs', 'replit',
+    // Fintech
+    'affirm', 'marqeta', 'mercury', 'gusto', 'rippling',
+    'deel', 'remote-com', 'oysterhr', 'justworks',
+    // Security / Infra
+    'tailscale', 'teleport', 'lacework', 'orca-security',
+    'wiz-io', 'semgrep', 'chainguard', 'isovalent',
+    // E-commerce / DTC
+    'shopify', 'bigcommerce', 'bolt', 'recharge', 'gorgias',
+    'stamped', 'yotpo', 'attentive', 'klaviyo', 'postscript',
+    // Climate / Energy
+    'arcadia', 'palmetto', 'span-io', 'enphase',
   ];
   const allJobs = [];
   for (const board of boards) {
@@ -283,9 +301,20 @@ async function searchGreenhouseBoards() {
 
 async function searchLeverBoards() {
   const boards = [
-    'Netflix', 'coinbase', 'atlassian', 'postman', 'airtable',
-    'figma', 'databricks', 'Grammarly', 'carta', 'retool',
-    'loom', 'scale', 'anduril', 'rippling', 'faire',
+    'Netflix', 'coinbase', 'atlassian', 'postman',
+    'databricks', 'Grammarly', 'carta', 'retool',
+    'scale', 'anduril', 'rippling', 'faire',
+    // Additional Lever companies
+    'nerdwallet', 'chime', 'lattice', 'lucid', 'GOAT-Group',
+    'momentive', 'onemedical', 'pagerduty', 'samsara', 'sentry',
+    'SmartRecruiters', 'squarespace', 'sweetgreen', 'tempus',
+    'thumbtack', 'toast', 'TripActions', 'upstart', 'wealthfront',
+    'benchling', 'cockroachlabs', 'confluent', 'coreweave',
+    'crossbeam', 'Harness', 'heap', 'JumpCloud', 'LaunchDarkly',
+    'Litmus', 'materialize', 'mongodb', 'netlify', 'newrelic',
+    'ngrok', 'noom', 'olo', 'pachyderm', 'PlanetScale',
+    'Prefect', 'readme', 'sourcegraph', 'Stytch', 'temporal',
+    'terraform', 'Weights-Biases', 'WorkOS', 'Zscaler',
   ];
   const allJobs = [];
   for (const board of boards) {
@@ -320,27 +349,29 @@ async function searchLeverBoards() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// 12. OTTA
+// 12. SIMPLYHIRED
 // ══════════════════════════════════════════════════════════════════════
 
-async function searchOtta() {
+async function searchSimplyHired(query) {
   try {
-    const res = await fetch('https://app.otta.com/api/v1/search/jobs', {
-      method: 'POST',
-      headers: { ...HEADERS, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: 'VP Marketing',
-        filters: { remote: true, seniority: ['VP', 'C-Suite', 'Director'] },
-        limit: 50,
-      }),
+    const res = await fetch(`https://www.simplyhired.com/search?q=${encodeURIComponent(query)}&l=remote&fdb=14`, { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('article[data-jobkey], li.SerpJob').each((i, el) => {
+      const title = $(el).find('h2 a, .jobposting-title').text().trim();
+      const company = $(el).find('[data-testid="companyName"], .jobposting-company').text().trim();
+      const location = $(el).find('[data-testid="searchSerpJobLocation"], .jobposting-location').text().trim();
+      const link = $(el).find('h2 a, a[data-mdref]').attr('href') || '';
+      const salary = $(el).find('.jobposting-salary, .SerpJob-metaInfoLeft').text().trim();
+      if (title) jobs.push({
+        source: 'SimplyHired', title, company, location: location || 'Remote',
+        url: link.startsWith('http') ? link : link ? `https://www.simplyhired.com${link}` : '',
+        salary, query,
+      });
     });
-    if (!res.ok) throw new Error(`Status ${res.status}`);
-    const data = await res.json();
-    return (data.results || []).map(j => ({
-      source: 'Otta', title: j.title || '', company: j.company?.name || '',
-      location: 'Remote', url: j.url || '', salary: j.salary || '', query: 'VP Marketing',
-    })).filter(j => j.title);
-  } catch (err) { console.error(`  Otta error: ${err.message}`); return []; }
+    return jobs;
+  } catch (err) { console.error(`  SimplyHired error: ${err.message}`); return []; }
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -381,21 +412,20 @@ async function searchAllSources(queries = SEARCH_QUERIES) {
     });
   }
 
-  // ── Wave 1: API-based sources (fast, no rate limit concerns) ──
-  console.log('  Wave 1: API sources (RemoteOK, Greenhouse, Lever, TheMuse, Wellfound, Otta)');
+  // ── Wave 1: API-based sources (fast, most reliable) ──
+  console.log('  Wave 1: API sources (RemoteOK, Greenhouse, Lever, TheMuse)');
   const wave1 = await Promise.all([
     searchRemoteOK(),
     searchGreenhouseBoards(),
     searchLeverBoards(),
     searchTheMuse(),
     searchWellfound(),
-    searchOtta(),
   ]);
   wave1.forEach(addJobs);
   console.log(`  → Wave 1: ${allJobs.length} jobs`);
 
   // ── Wave 2: HTML scraping sources (need rate limiting) ──
-  console.log('  Wave 2: Scraping LinkedIn, Indeed, Glassdoor, ZipRecruiter, BuiltIn, FlexJobs, WWR');
+  console.log('  Wave 2: Scraping LinkedIn, Indeed, Glassdoor, ZipRecruiter, SimplyHired, BuiltIn, FlexJobs, WWR');
 
   for (const query of queries) {
     console.log(`    Searching: "${query}"`);
@@ -404,6 +434,7 @@ async function searchAllSources(queries = SEARCH_QUERIES) {
       searchIndeed(query),
       searchGlassdoor(query),
       searchZipRecruiter(query),
+      searchSimplyHired(query),
     ]);
     results.forEach(addJobs);
     await delay(2000); // Rate limit between query rounds
@@ -414,7 +445,9 @@ async function searchAllSources(queries = SEARCH_QUERIES) {
     searchWWR(),
     searchBuiltIn('VP Marketing'),
     searchBuiltIn('CMO'),
+    searchBuiltIn('Head of Marketing'),
     searchFlexJobs('VP Marketing remote'),
+    searchFlexJobs('CMO remote'),
   ]);
   wave2single.forEach(addJobs);
 
