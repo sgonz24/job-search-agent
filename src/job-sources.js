@@ -240,31 +240,11 @@ async function searchFlexJobs(query) {
 async function searchGreenhouseBoards() {
   // Known companies with public Greenhouse boards and marketing VP roles
   const boards = [
-    // Top-tier tech companies with public Greenhouse boards
-    'figma', 'stripe', 'notion', 'datadog', 'hashicorp', 'gitlab',
-    'cloudflare', 'airtable', 'dbt-labs', 'snyk', 'grafana-labs',
-    'canva', 'miro', 'loom', 'calendly', 'ramp', 'brex', 'plaid',
-    'segment', 'twilio', 'hubspot', 'zapier', 'webflow', 'vercel',
-    // SaaS / Growth companies
-    'amplitude', 'mixpanel', 'intercom', 'drift', 'gong',
-    'outreach', '6sense', 'mutinyhq', 'hightouch', 'census',
-    'drata', 'vanta', 'ironclad', 'docebo', 'sendbird',
-    'launchdarkly', 'split', 'flagsmith', 'contentful', 'storyblok',
-    // AI / ML companies
-    'anthropic', 'openai', 'cohere', 'jasper', 'copy-ai',
-    'runway', 'stability-ai', 'huggingface', 'scale-ai', 'labelbox',
-    'weights-and-biases', 'together-ai', 'modal-labs', 'replit',
-    // Fintech
-    'affirm', 'marqeta', 'mercury', 'gusto', 'rippling',
-    'deel', 'remote-com', 'oysterhr', 'justworks',
-    // Security / Infra
-    'tailscale', 'teleport', 'lacework', 'orca-security',
-    'wiz-io', 'semgrep', 'chainguard', 'isovalent',
-    // E-commerce / DTC
-    'shopify', 'bigcommerce', 'bolt', 'recharge', 'gorgias',
-    'stamped', 'yotpo', 'attentive', 'klaviyo', 'postscript',
-    // Climate / Energy
-    'arcadia', 'palmetto', 'span-io', 'enphase',
+    'figma', 'stripe', 'notion', 'datadog', 'gitlab', 'cloudflare',
+    'hubspot', 'zapier', 'webflow', 'vercel', 'anthropic', 'openai',
+    'amplitude', 'gong', 'drata', 'contentful', 'canva', 'intercom',
+    'affirm', 'mercury', 'gusto', 'shopify', 'klaviyo', 'attentive',
+    'jasper', 'runway', 'replit', 'ramp', 'brex', 'snyk',
   ];
   const allJobs = [];
   for (const board of boards) {
@@ -301,20 +281,9 @@ async function searchGreenhouseBoards() {
 
 async function searchLeverBoards() {
   const boards = [
-    'Netflix', 'coinbase', 'atlassian', 'postman',
-    'databricks', 'Grammarly', 'carta', 'retool',
-    'scale', 'anduril', 'rippling', 'faire',
-    // Additional Lever companies
-    'nerdwallet', 'chime', 'lattice', 'lucid', 'GOAT-Group',
-    'momentive', 'onemedical', 'pagerduty', 'samsara', 'sentry',
-    'SmartRecruiters', 'squarespace', 'sweetgreen', 'tempus',
-    'thumbtack', 'toast', 'TripActions', 'upstart', 'wealthfront',
-    'benchling', 'cockroachlabs', 'confluent', 'coreweave',
-    'crossbeam', 'Harness', 'heap', 'JumpCloud', 'LaunchDarkly',
-    'Litmus', 'materialize', 'mongodb', 'netlify', 'newrelic',
-    'ngrok', 'noom', 'olo', 'pachyderm', 'PlanetScale',
-    'Prefect', 'readme', 'sourcegraph', 'Stytch', 'temporal',
-    'terraform', 'Weights-Biases', 'WorkOS', 'Zscaler',
+    'Netflix', 'coinbase', 'atlassian', 'databricks', 'Grammarly',
+    'rippling', 'samsara', 'confluent', 'mongodb', 'squarespace',
+    'toast', 'noom', 'pagerduty', 'sourcegraph', 'retool',
   ];
   const allJobs = [];
   for (const board of boards) {
