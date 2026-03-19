@@ -39,6 +39,8 @@ db.exec(`
     email_msg TEXT DEFAULT '',
     applied_at TEXT,
     notes TEXT DEFAULT '',
+    easy_apply INTEGER DEFAULT 0,
+    apply_method TEXT DEFAULT '',
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now')),
     UNIQUE(title, company)
@@ -76,13 +78,15 @@ db.exec(`
 
 const stmts = {
   upsertJob: db.prepare(`
-    INSERT INTO jobs (external_id, source, title, company, location, url, salary, date_posted, description, query, fit_score, tier, match_reasons, ai_analysis, cover_letter, linkedin_msg, email_msg)
-    VALUES (@external_id, @source, @title, @company, @location, @url, @salary, @date_posted, @description, @query, @fit_score, @tier, @match_reasons, @ai_analysis, @cover_letter, @linkedin_msg, @email_msg)
+    INSERT INTO jobs (external_id, source, title, company, location, url, salary, date_posted, description, query, fit_score, tier, match_reasons, ai_analysis, cover_letter, linkedin_msg, email_msg, easy_apply, apply_method)
+    VALUES (@external_id, @source, @title, @company, @location, @url, @salary, @date_posted, @description, @query, @fit_score, @tier, @match_reasons, @ai_analysis, @cover_letter, @linkedin_msg, @email_msg, @easy_apply, @apply_method)
     ON CONFLICT(title, company) DO UPDATE SET
       fit_score = CASE WHEN excluded.fit_score > jobs.fit_score THEN excluded.fit_score ELSE jobs.fit_score END,
       tier = CASE WHEN excluded.fit_score > jobs.fit_score THEN excluded.tier ELSE jobs.tier END,
       match_reasons = CASE WHEN excluded.fit_score > jobs.fit_score THEN excluded.match_reasons ELSE jobs.match_reasons END,
       ai_analysis = CASE WHEN excluded.ai_analysis != '' THEN excluded.ai_analysis ELSE jobs.ai_analysis END,
+      easy_apply = CASE WHEN excluded.easy_apply = 1 THEN 1 ELSE jobs.easy_apply END,
+      apply_method = CASE WHEN excluded.apply_method != '' THEN excluded.apply_method ELSE jobs.apply_method END,
       updated_at = datetime('now')
   `),
 
@@ -183,6 +187,8 @@ function upsertJob(job) {
     cover_letter: job.cover_letter || '',
     linkedin_msg: job.linkedin_msg || '',
     email_msg: job.email_msg || '',
+    easy_apply: job.easy_apply ? 1 : 0,
+    apply_method: job.apply_method || getApplyMethod(job),
   });
 }
 
@@ -196,6 +202,15 @@ function upsertMany(jobs) {
     return newCount;
   });
   return tx(jobs);
+}
+
+function getApplyMethod(job) {
+  const url = (job.url || '').toLowerCase();
+  if (job.easy_apply) return 'easy_apply';
+  if (url.includes('greenhouse')) return 'greenhouse';
+  if (url.includes('lever.co')) return 'lever';
+  if (url.includes('linkedin.com')) return 'linkedin_external';
+  return 'external';
 }
 
 module.exports = {

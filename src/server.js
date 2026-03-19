@@ -171,17 +171,25 @@ app.post('/api/apply/auto', async (req, res) => {
   try {
     const { batchSmartApply } = require('./apply-agent/direct-apply');
 
-    // Get unapplied jobs from specified tiers
+    // Get unapplied jobs from specified tiers — ONLY auto-apply-able jobs
     let jobs = [];
     for (const tier of tiers) {
       const tierJobs = stmts.getJobsByTier.all(tier).filter(j => j.status === 'new' || j.status === 'saved');
       jobs.push(...tierJobs);
     }
     jobs.sort((a, b) => b.fit_score - a.fit_score);
-    jobs = jobs.filter(j => j.url && j.url.startsWith('http'));
+    jobs = jobs.filter(j => {
+      if (!j.url || !j.url.startsWith('http')) return false;
+      const url = j.url.toLowerCase();
+      // Only auto-apply to: Easy Apply, Greenhouse board forms, Lever board forms
+      if (j.easy_apply || j.apply_method === 'easy_apply') return true;
+      if (url.includes('greenhouse.io') || j.apply_method === 'greenhouse') return true;
+      if (url.includes('lever.co') || j.apply_method === 'lever') return true;
+      return false;
+    });
 
     if (jobs.length === 0) {
-      applyResults = { total: 0, successful: 0, failed: 0, results: [], message: 'No unapplied jobs in selected tiers' };
+      applyResults = { total: 0, successful: 0, failed: 0, results: [], message: 'No auto-apply-able jobs found (need Easy Apply, Greenhouse, or Lever)' };
       applyInProgress = false;
       return;
     }

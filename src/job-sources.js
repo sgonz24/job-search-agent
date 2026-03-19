@@ -48,7 +48,10 @@ async function searchLinkedIn(query) {
       const location = $(el).find('span.job-search-card__location').text().trim();
       const link = $(el).find('a.base-card__full-link').attr('href') || '';
       const datePosted = $(el).find('time').attr('datetime') || '';
-      if (title) jobs.push({ source: 'LinkedIn', title, company, location, url: link.split('?')[0], datePosted, query });
+      // Detect Easy Apply from the listing badge
+      const cardText = $(el).text().toLowerCase();
+      const isEasyApply = cardText.includes('easy apply') || cardText.includes('easyapply');
+      if (title) jobs.push({ source: 'LinkedIn', title, company, location, url: link.split('?')[0], datePosted, query, easy_apply: isEasyApply });
     });
     return jobs;
   } catch (err) { console.error(`  LinkedIn error: ${err.message}`); return []; }
