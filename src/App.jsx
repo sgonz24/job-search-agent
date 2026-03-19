@@ -8,7 +8,7 @@ function App() {
   const [stats, setStats] = useState(null)
   const [activity, setActivity] = useState([])
   const [statusFilter, setStatusFilter] = useState('all')
-  const [sourceFilter, setSourceFilter] = useState('all')
+  const [sourceFilter, setSourceFilter] = useState('auto')
   const [search, setSearch] = useState('')
   const [selectedJob, setSelectedJob] = useState(null)
   const [searchRunning, setSearchRunning] = useState(false)
