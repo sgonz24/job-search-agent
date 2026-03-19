@@ -133,9 +133,70 @@ app.get('/api/runs', (req, res) => {
   res.json(runs);
 });
 
+// ── Auto-Apply Routes ───────────────────────────────────────────────
+
+let applyInProgress = false;
+let applyResults = null;
+
+// Apply to a single job by ID
+app.post('/api/jobs/:id/apply', async (req, res) => {
+  const job = stmts.getJobById.get(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Job not found' });
+  if (!job.url) return res.status(400).json({ error: 'Job has no URL' });
+
+  res.json({ message: 'Apply started', jobId: job.id });
+
+  try {
+    const { applyToJob } = require('./apply-agent/apply-engine');
+    const { chromium } = require('playwright');
+    const browser = await chromium.launch({ headless: true, args: ['--no-sandbox'] });
+    const result = await applyToJob(job, browser);
+    await browser.close();
+    console.log('[server] Single apply result:', JSON.stringify(result, null, 2));
+  } catch (err) {
+    console.error('[server] Single apply failed:', err.message);
+  }
+});
+
+// Auto-apply to Tier A (and optionally B) jobs
+app.post('/api/apply/auto', async (req, res) => {
+  if (applyInProgress) {
+    return res.status(409).json({ error: 'Auto-apply already in progress' });
+  }
+
+  const { tiers = ['A'], maxApps = 5 } = req.body || {};
+  applyInProgress = true;
+  applyResults = null;
+
+  res.json({ message: 'Auto-apply started', tiers, maxApps });
+
+  try {
+    const { autoApply } = require('./apply-agent/apply-engine');
+    applyResults = await autoApply({ tiers, maxApps });
+    console.log('[server] Auto-apply complete:', {
+      total: applyResults.total,
+      successful: applyResults.successful,
+      failed: applyResults.failed,
+    });
+  } catch (err) {
+    console.error('[server] Auto-apply failed:', err.message);
+    applyResults = { error: err.message };
+  } finally {
+    applyInProgress = false;
+  }
+});
+
+// Auto-apply status
+app.get('/api/apply/status', (req, res) => {
+  res.json({
+    inProgress: applyInProgress,
+    results: applyResults,
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString(), searchInProgress });
+  res.json({ status: 'ok', timestamp: new Date().toISOString(), searchInProgress, applyInProgress });
 });
 
 // ── Cron: run search every 6 hours ─────────────────────────────────
