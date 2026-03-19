@@ -1,7 +1,7 @@
 // Job Board Search Sources — VP Marketing remote roles
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
-const { AbortController } = require('node-fetch');
+// AbortController is global in Node 18+
 
 const SEARCH_QUERIES = [
   "VP of Marketing remote",
