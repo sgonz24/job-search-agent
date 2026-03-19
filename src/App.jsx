@@ -8,7 +8,7 @@ function App() {
   const [stats, setStats] = useState(null)
   const [activity, setActivity] = useState([])
   const [statusFilter, setStatusFilter] = useState('all')
-  const [sourceFilter, setSourceFilter] = useState('auto')
+  const [sourceFilter, setSourceFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [selectedJob, setSelectedJob] = useState(null)
   const [searchRunning, setSearchRunning] = useState(false)
@@ -97,13 +97,11 @@ function App() {
   const tierColor = (tier) => tier === 'A' ? '#D4A017' : tier === 'B' ? '#888' : '#555'
   const statusLabel = (s) => ({ new: 'New', saved: 'Saved', applied: 'Applied', interviewing: 'Interview', rejected: 'Rejected', offer: 'OFFER!', hidden: 'Hidden' }[s] || s)
 
-  // Determine if a job can be auto-applied
+  // All jobs with URLs can be attempted by the agent
   const canAutoApply = (job) => {
-    if (job.easy_apply || job.apply_method === 'easy_apply') return true
-    const url = (job.url || '').toLowerCase()
-    if (url.includes('greenhouse.io')) return true
-    if (url.includes('lever.co')) return true
-    return false
+    if (!job.url || !job.url.startsWith('http')) return false
+    if (job.url.includes('remoteok.comhttps')) return false
+    return true
   }
 
   const applyMethod = (job) => {
@@ -111,7 +109,11 @@ function App() {
     const url = (job.url || '').toLowerCase()
     if (url.includes('greenhouse')) return 'Greenhouse'
     if (url.includes('lever.co')) return 'Lever'
-    return 'Manual'
+    if (url.includes('linkedin.com')) return 'LinkedIn'
+    if (url.includes('indeed.com')) return 'Indeed'
+    if (url.includes('ziprecruiter')) return 'ZipRecruiter'
+    if (url.includes('builtin')) return 'BuiltIn'
+    return job.source || 'Direct'
   }
 
   // Filter jobs
@@ -274,9 +276,9 @@ function App() {
       <div className="controls">
         <div className="filter-row">
           <div className="filter-group">
-            {[['all','All Jobs'],['auto','Auto-Apply'],['manual','Manual Apply'],['linkedin','LinkedIn'],['greenhouse','Greenhouse']].map(([k,l]) => (
-              <button key={k} className={`fbtn ${sourceFilter === k ? 'active' : ''} ${k === 'auto' ? 'fbtn-auto' : ''}`} onClick={() => setSourceFilter(k)}>
-                {l}{k === 'auto' ? ` (${jobs.filter(canAutoApply).length})` : k === 'manual' ? ` (${jobs.filter(j => !canAutoApply(j)).length})` : ''}
+            {[['all','All Jobs'],['linkedin','LinkedIn'],['greenhouse','Greenhouse'],['lever','Lever']].map(([k,l]) => (
+              <button key={k} className={`fbtn ${sourceFilter === k ? 'active' : ''}`} onClick={() => setSourceFilter(k)}>
+                {l}
               </button>
             ))}
           </div>
