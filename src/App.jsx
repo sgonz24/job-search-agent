@@ -15,6 +15,11 @@ function App() {
   const [tab, setTab] = useState('cover_letter')
   const [showLegend, setShowLegend] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [applyRunning, setApplyRunning] = useState(false)
+  const [applyResults, setApplyResults] = useState(null)
+  const [showApplyPanel, setShowApplyPanel] = useState(false)
+  const [applyTiers, setApplyTiers] = useState(['A'])
+  const [applyMax, setApplyMax] = useState(5)
 
   const fetchJobs = useCallback(async () => {
     try {
@@ -85,6 +90,35 @@ function App() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  // Auto-apply to a single job
+  const applyToJob = async (jobId) => {
+    await fetch(`${API}/api/jobs/${jobId}/apply`, { method: 'POST' })
+    fetchActivity()
+  }
+
+  // Batch auto-apply
+  const triggerAutoApply = async () => {
+    setApplyRunning(true)
+    setApplyResults(null)
+    await fetch(`${API}/api/apply/auto`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tiers: applyTiers, maxApps: applyMax }),
+    })
+    const poll = setInterval(async () => {
+      const res = await fetch(`${API}/api/apply/status`)
+      const data = await res.json()
+      if (!data.inProgress) {
+        clearInterval(poll)
+        setApplyRunning(false)
+        setApplyResults(data.results)
+        fetchJobs()
+        fetchStats()
+        fetchActivity()
+      }
+    }, 8000)
+  }
+
   const tierColor = (tier) => tier === 'A' ? '#EF8B22' : tier === 'B' ? '#3170B3' : '#6b7280'
 
   const statusLabel = (s) => ({
@@ -104,6 +138,9 @@ function App() {
           <div className="header-right">
             <button className="legend-toggle" onClick={() => setShowLegend(!showLegend)}>
               {showLegend ? 'Hide' : 'Scoring'} Legend
+            </button>
+            <button className="apply-toggle" onClick={() => setShowApplyPanel(!showApplyPanel)}>
+              Auto-Apply
             </button>
             <button
               className={`search-btn ${searchRunning ? 'running' : ''}`}
@@ -173,6 +210,63 @@ function App() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Auto-Apply Panel ── */}
+      {showApplyPanel && (
+        <div className="apply-panel">
+          <div className="apply-panel-header">
+            <h3>AI Auto-Apply Agent</h3>
+            <p className="apply-desc">The agent opens each job posting, detects the ATS (Greenhouse, Lever, Workable, etc.), fills the form with your profile, uploads your resume, generates AI-powered answers to custom questions, and submits — with human-like pacing between applications.</p>
+          </div>
+          <div className="apply-controls">
+            <div className="apply-setting">
+              <label>Apply to tiers:</label>
+              <div className="filter-group">
+                {['A', 'B'].map(t => (
+                  <button key={t}
+                    className={`fbtn ${applyTiers.includes(t) ? 'active' : ''}`}
+                    style={applyTiers.includes(t) ? { background: tierColor(t), color: '#fff', borderColor: tierColor(t) } : {}}
+                    onClick={() => {
+                      setApplyTiers(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])
+                    }}>
+                    Tier {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="apply-setting">
+              <label>Max applications:</label>
+              <select className="apply-select" value={applyMax} onChange={e => setApplyMax(Number(e.target.value))}>
+                {[1, 3, 5, 10, 15, 25].map(n => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
+            <button
+              className={`apply-btn ${applyRunning ? 'running' : ''}`}
+              onClick={triggerAutoApply}
+              disabled={applyRunning || applyTiers.length === 0}
+            >
+              {applyRunning ? 'Agent Applying...' : `Launch Auto-Apply (${applyTiers.join('+')} tiers, max ${applyMax})`}
+            </button>
+          </div>
+          {applyResults && (
+            <div className="apply-results">
+              <div className="apply-stat-row">
+                <span className="apply-stat success">{applyResults.successful} Applied</span>
+                <span className="apply-stat fail">{applyResults.failed} Failed</span>
+                <span className="apply-stat total">{applyResults.total} Total</span>
+              </div>
+              {applyResults.results?.map((r, i) => (
+                <div key={i} className={`apply-result-item ${r.success ? 'ok' : 'err'}`}>
+                  <span>{r.success ? '[OK]' : '[FAIL]'}</span>
+                  <span>Job #{r.jobId} — {r.atsType}</span>
+                  <span>{r.fieldsFilled?.length || 0} fields filled</span>
+                  {r.errors?.length > 0 && <span className="apply-err">{r.errors[0]}</span>}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -257,6 +351,11 @@ function App() {
             <div className="detail-actions">
               {selectedJob.url && (
                 <a href={selectedJob.url} target="_blank" rel="noopener" className="btn-primary">View Job Posting</a>
+              )}
+              {selectedJob.url && selectedJob.status !== 'applied' && (
+                <button className="btn-apply" onClick={() => applyToJob(selectedJob.id)}>
+                  AI Auto-Apply
+                </button>
               )}
               <span className="detail-src">via {selectedJob.source}</span>
               {selectedJob.salary && <span className="jsalary">{selectedJob.salary}</span>}
