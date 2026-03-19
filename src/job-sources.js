@@ -251,11 +251,53 @@ async function searchFlexJobs(query) {
 async function searchGreenhouseBoards() {
   // Known companies with public Greenhouse boards and marketing VP roles
   const boards = [
+    // Tier 1 — Big tech / known brands
     'figma', 'stripe', 'notion', 'datadog', 'gitlab', 'cloudflare',
     'hubspot', 'zapier', 'webflow', 'vercel', 'anthropic', 'openai',
-    'amplitude', 'gong', 'drata', 'contentful', 'canva', 'intercom',
-    'affirm', 'mercury', 'gusto', 'shopify', 'klaviyo', 'attentive',
+    'canva', 'intercom', 'shopify', 'twilio', 'segment', 'plaid',
+    // SaaS / Growth
+    'amplitude', 'gong', 'drata', 'contentful', 'klaviyo', 'attentive',
     'jasper', 'runway', 'replit', 'ramp', 'brex', 'snyk',
+    'mixpanel', 'outreach', '6sense', 'hightouch', 'census', 'vanta',
+    'ironclad', 'docebo', 'sendbird', 'launchdarkly', 'storyblok',
+    'mutinyhq', 'drift', 'salesloft', 'seismic', 'clari', 'chorus',
+    // AI / ML
+    'cohere', 'copy-ai', 'stability-ai', 'huggingface', 'scale-ai',
+    'labelbox', 'weights-and-biases', 'together-ai', 'modal-labs',
+    'mistral', 'perplexity-ai', 'midjourney', 'synthesia',
+    // Fintech
+    'affirm', 'mercury', 'gusto', 'marqeta', 'melio', 'bill',
+    'navan', 'divvy', 'greenlight', 'chime', 'current',
+    'robinhood', 'sofi', 'betterment', 'wealthsimple',
+    // Security / DevTools
+    'tailscale', 'teleport', 'lacework', 'orca-security', 'wiz-io',
+    'semgrep', 'chainguard', 'snort', 'palo-alto-networks',
+    'hashicorp', 'grafana-labs', 'dbt-labs', 'airbyte', 'fivetran',
+    // E-commerce / Consumer
+    'bigcommerce', 'bolt', 'recharge', 'gorgias', 'yotpo',
+    'postscript', 'stamped', 'loopme', 'taboola', 'outbrain',
+    'the-trade-desk', 'liveramp', 'applovin', 'unity',
+    // Healthcare / Bio
+    'tempus', 'flatiron-health', 'ro', 'hims-and-hers', 'cerebral',
+    'color-health', 'devoted-health', 'clover-health',
+    // Real Estate / Proptech
+    'opendoor', 'compass', 'redfin', 'offerpad', 'zillow',
+    // Climate / Energy
+    'arcadia', 'palmetto', 'span-io', 'enphase', 'sunrun',
+    // HR / Recruiting
+    'rippling', 'deel', 'remote-com', 'oysterhr', 'justworks',
+    'lattice', 'culture-amp', 'leapsome', 'betterworks',
+    // Productivity / Collab
+    'miro', 'loom', 'calendly', 'airtable', 'coda', 'clickup',
+    'monday', 'asana', 'linear', 'height', 'shortcut',
+    // Media / Content
+    'buzzfeed', 'vox-media', 'substack', 'medium', 'spotify',
+    // Travel / Hospitality
+    'airbnb', 'tripadvisor', 'hopper', 'sonder', 'getaround',
+    // Education
+    'coursera', 'duolingo', 'masterclass', 'udemy', 'skillshare',
+    // Food / Delivery
+    'doordash', 'instacart', 'gopuff', 'sweetgreen', 'cava',
   ];
   const allJobs = [];
   for (const board of boards) {
@@ -269,14 +311,18 @@ async function searchGreenhouseBoards() {
         const title = j.title || '';
         const pos = title.toLowerCase();
         if ((pos.includes('vp') || pos.includes('vice president') || pos.includes('head of') ||
-             pos.includes('director') || pos.includes('cmo') || pos.includes('chief marketing')) &&
-            (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand'))) {
+             pos.includes('director') || pos.includes('cmo') || pos.includes('chief marketing') ||
+             pos.includes('senior dir') || pos.includes('svp') || pos.includes('lead')) &&
+            (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
+             pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
+             pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms'))) {
           const loc = j.location?.name || '';
           allJobs.push({
             source: 'Greenhouse', title, company: board.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
             location: loc, url: j.absolute_url || `https://boards.greenhouse.io/${board}/jobs/${j.id}`,
             datePosted: j.updated_at || '', query: 'VP Marketing',
             external_id: `gh-${board}-${j.id}`,
+            easy_apply: true, apply_method: 'greenhouse',
           });
         }
       });
@@ -292,9 +338,27 @@ async function searchGreenhouseBoards() {
 
 async function searchLeverBoards() {
   const boards = [
+    // Big names
     'Netflix', 'coinbase', 'atlassian', 'databricks', 'Grammarly',
-    'rippling', 'samsara', 'confluent', 'mongodb', 'squarespace',
-    'toast', 'noom', 'pagerduty', 'sourcegraph', 'retool',
+    'samsara', 'confluent', 'mongodb', 'squarespace', 'toast',
+    'noom', 'pagerduty', 'sourcegraph', 'retool', 'postman',
+    // Growth / SaaS
+    'nerdwallet', 'carta', 'faire', 'anduril', 'scale',
+    'lucid', 'GOAT-Group', 'upstart', 'wealthfront',
+    'benchling', 'cockroachlabs', 'coreweave', 'stytch',
+    'crossbeam', 'Harness', 'heap', 'JumpCloud', 'temporal',
+    'readme', 'ngrok', 'WorkOS', 'PlanetScale', 'netlify',
+    // Consumer
+    'sweetgreen', 'thumbtack', 'TripActions', 'olo',
+    // HR / People
+    'lattice', 'SmartRecruiters', 'onemedical', 'momentive',
+    // Fintech
+    'chime', 'newrelic', 'Zscaler', 'Litmus', 'Prefect',
+    // AI
+    'adept', 'cohere', 'character-ai', 'inflection-ai',
+    // Marketing / AdTech
+    'branch', 'appsflyer', 'braze', 'iterable', 'customer-io',
+    'sendgrid', 'mailchimp', 'constant-contact',
   ];
   const allJobs = [];
   for (const board of boards) {
@@ -308,8 +372,11 @@ async function searchLeverBoards() {
         const title = j.text || '';
         const pos = title.toLowerCase();
         if ((pos.includes('vp') || pos.includes('vice president') || pos.includes('head of') ||
-             pos.includes('director') || pos.includes('cmo') || pos.includes('chief marketing')) &&
-            (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand'))) {
+             pos.includes('director') || pos.includes('cmo') || pos.includes('chief marketing') ||
+             pos.includes('senior dir') || pos.includes('svp') || pos.includes('lead')) &&
+            (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
+             pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
+             pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms'))) {
           allJobs.push({
             source: 'Lever', title, company: board.replace(/([A-Z])/g, ' $1').trim(),
             location: j.categories?.location || 'Remote',
@@ -317,7 +384,7 @@ async function searchLeverBoards() {
             datePosted: j.createdAt ? new Date(j.createdAt).toISOString() : '',
             query: 'VP Marketing',
             external_id: `lever-${board}-${j.id}`,
-            // Lever apply URL for direct API submit
+            easy_apply: true, apply_method: 'lever',
             _applyUrl: j.applyUrl || '',
           });
         }
