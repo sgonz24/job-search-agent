@@ -83,7 +83,7 @@ async function searchRemoteOK() {
         && (pos.includes('marketing') || tags.includes('marketing'));
     }).map(j => ({
       source: 'RemoteOK', title: j.position, company: j.company || '', location: 'Remote',
-      url: j.url ? `https://remoteok.com${j.url}` : '', datePosted: j.date || '',
+      url: j.url ? (j.url.startsWith('http') ? j.url : `https://remoteok.com${j.url}`) : '', datePosted: j.date || '',
       salary: j.salary_min ? `$${j.salary_min}-$${j.salary_max}` : '', query: 'marketing',
     }));
   } catch (err) { console.error(`  RemoteOK error: ${err.message}`); return []; }
