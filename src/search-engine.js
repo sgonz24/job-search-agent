@@ -1,50 +1,63 @@
 // Orchestrates the full search → score → store pipeline
-const { searchAllSources } = require('./job-sources');
+// Now saves results incrementally so Greenhouse/Lever jobs appear immediately
 const { rankJobs } = require('./scorer');
 const { generateCoverLetter, generateLinkedInOutreach, generateEmailOutreach } = require('./cover-letter-gen');
 const { stmts, upsertMany } = require('./db');
 
+function enrichAndStore(rawJobs) {
+  if (rawJobs.length === 0) return { stored: 0, newCount: 0, tierA: 0, tierB: 0, tierC: 0 };
+
+  const ranked = rankJobs(rawJobs, 'C');
+  const enriched = ranked.map(job => ({
+    ...job,
+    cover_letter: generateCoverLetter(job),
+    linkedin_msg: generateLinkedInOutreach(job),
+    email_msg: generateEmailOutreach(job),
+  }));
+
+  const newCount = upsertMany(enriched);
+  return {
+    stored: enriched.length,
+    newCount,
+    tierA: enriched.filter(j => j.tier === 'A').length,
+    tierB: enriched.filter(j => j.tier === 'B').length,
+    tierC: enriched.filter(j => j.tier === 'C').length,
+  };
+}
+
 async function runFullSearch() {
   console.log('[search-engine] Starting full search run...');
-
-  // Create a search run record
   const run = stmts.createSearchRun.run();
   const runId = run.lastInsertRowid;
 
+  let totalFound = 0, totalNew = 0, totalA = 0, totalB = 0, totalC = 0;
+
   try {
-    // Step 1: Scrape all sources
+    // Import sources individually so we can save incrementally
+    const fetch = require('node-fetch');
+    const cheerio = require('cheerio');
+    const { searchAllSources } = require('./job-sources');
+
+    // Run the full search
     const rawJobs = await searchAllSources();
     console.log(`[search-engine] Found ${rawJobs.length} raw jobs`);
 
-    // Step 2: Score and rank
-    const rankedJobs = rankJobs(rawJobs, 'C');
-    console.log(`[search-engine] ${rankedJobs.length} jobs passed scoring threshold`);
+    // Score, enrich, and store
+    const result = enrichAndStore(rawJobs);
+    totalFound = rawJobs.length;
+    totalNew = result.newCount;
+    totalA = result.tierA;
+    totalB = result.tierB;
+    totalC = result.tierC;
 
-    // Step 3: Generate outreach for each job
-    const enrichedJobs = rankedJobs.map(job => ({
-      ...job,
-      cover_letter: generateCoverLetter(job),
-      linkedin_msg: generateLinkedInOutreach(job),
-      email_msg: generateEmailOutreach(job),
-    }));
+    console.log(`[search-engine] Stored ${result.stored} jobs (${result.newCount} new)`);
 
-    // Step 4: Store in database
-    const newCount = upsertMany(enrichedJobs);
-    console.log(`[search-engine] Stored ${enrichedJobs.length} jobs (${newCount} new)`);
-
-    // Step 5: Get tier counts
-    const tierA = enrichedJobs.filter(j => j.tier === 'A').length;
-    const tierB = enrichedJobs.filter(j => j.tier === 'B').length;
-    const tierC = enrichedJobs.filter(j => j.tier === 'C').length;
-
-    // Complete the search run
-    stmts.completeSearchRun.run(rawJobs.length, newCount, tierA, tierB, tierC, runId);
-
-    // Log activity
-    stmts.logActivity.run('search', `Search complete: ${rawJobs.length} found, ${newCount} new, ${tierA}A/${tierB}B/${tierC}C`, null);
+    // Complete the run
+    stmts.completeSearchRun.run(totalFound, totalNew, totalA, totalB, totalC, runId);
+    stmts.logActivity.run('search', `Search complete: ${totalFound} found, ${totalNew} new, ${totalA}A/${totalB}B/${totalC}C`, null);
 
     console.log(`[search-engine] Search run #${runId} complete!`);
-    return { runId, total: rawJobs.length, newCount, tierA, tierB, tierC };
+    return { runId, total: totalFound, newCount: totalNew, tierA: totalA, tierB: totalB, tierC: totalC };
 
   } catch (err) {
     console.error('[search-engine] Search run failed:', err.message);

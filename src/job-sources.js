@@ -1,6 +1,7 @@
-// Job Board Search Sources — 13 boards for VP Marketing remote roles
+// Job Board Search Sources — VP Marketing remote roles
 const fetch = require('node-fetch');
 const cheerio = require('cheerio');
+const { AbortController } = require('node-fetch');
 
 const SEARCH_QUERIES = [
   "VP of Marketing remote",
@@ -8,15 +9,22 @@ const SEARCH_QUERIES = [
   "Head of Marketing remote",
   "CMO remote",
   "VP Growth Marketing remote",
-  "VP Digital Marketing remote",
-  "VP Demand Generation remote",
   "VP Marketing AI",
-  "VP Marketing SaaS remote",
-  "VP Marketing technology remote",
-  "Chief Marketing Officer remote",
-  "SVP Marketing remote",
-  "VP Brand Marketing remote",
 ];
+
+// Fetch with 10 second timeout
+async function fetchWithTimeout(url, opts = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
 
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 const HEADERS = { 'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'en-US,en;q=0.9' };
@@ -30,7 +38,7 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 async function searchLinkedIn(query) {
   const url = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}&location=United%20States&f_WT=2&f_E=5%2C6&start=0`;
   try {
-    const res = await fetch(url, { headers: HEADERS });
+    const res = await fetchWithTimeout(url, { headers: HEADERS });
     const html = await res.text();
     const $ = cheerio.load(html);
     const jobs = [];
@@ -52,7 +60,7 @@ async function searchLinkedIn(query) {
 
 async function searchIndeed(query) {
   try {
-    const res = await fetch(`https://www.indeed.com/jobs?q=${encodeURIComponent(query)}&l=Remote&sc=0kf%3Aattr(DSQF7)%3B&fromage=14&sort=date`, { headers: HEADERS });
+    const res = await fetchWithTimeout(`https://www.indeed.com/jobs?q=${encodeURIComponent(query)}&l=Remote&sc=0kf%3Aattr(DSQF7)%3B&fromage=14&sort=date`, { headers: HEADERS });
     const html = await res.text();
     const $ = cheerio.load(html);
     const jobs = [];
@@ -73,7 +81,7 @@ async function searchIndeed(query) {
 
 async function searchRemoteOK() {
   try {
-    const res = await fetch('https://remoteok.com/api', { headers: { 'User-Agent': UA, 'Accept': 'application/json' } });
+    const res = await fetchWithTimeout('https://remoteok.com/api', { headers: { 'User-Agent': UA, 'Accept': 'application/json' } });
     const data = await res.json();
     return data.filter(j => {
       if (!j.position) return false;
@@ -95,7 +103,7 @@ async function searchRemoteOK() {
 
 async function searchWWR() {
   try {
-    const res = await fetch('https://weworkremotely.com/categories/remote-marketing-jobs', { headers: HEADERS });
+    const res = await fetchWithTimeout('https://weworkremotely.com/categories/remote-marketing-jobs', { headers: HEADERS });
     const html = await res.text();
     const $ = cheerio.load(html);
     const jobs = [];
@@ -120,7 +128,7 @@ async function searchWWR() {
 
 async function searchBuiltIn(query) {
   try {
-    const res = await fetch(`https://builtin.com/jobs/remote?search=${encodeURIComponent(query)}`, { headers: { 'User-Agent': UA, 'Accept': 'text/html' } });
+    const res = await fetchWithTimeout(`https://builtin.com/jobs/remote?search=${encodeURIComponent(query)}`, { headers: { 'User-Agent': UA, 'Accept': 'text/html' } });
     const html = await res.text();
     const $ = cheerio.load(html);
     const jobs = [];
@@ -140,7 +148,7 @@ async function searchBuiltIn(query) {
 
 async function searchWellfound() {
   try {
-    const res = await fetch('https://wellfound.com/role/marketing/vp-of-marketing', { headers: HEADERS, redirect: 'follow' });
+    const res = await fetchWithTimeout('https://wellfound.com/role/marketing/vp-of-marketing', { headers: HEADERS, redirect: 'follow' });
     if (!res.ok) throw new Error(`Status ${res.status}`);
     const html = await res.text();
     const $ = cheerio.load(html);
@@ -166,7 +174,7 @@ async function searchWellfound() {
 
 async function searchGlassdoor(query) {
   try {
-    const res = await fetch(`https://www.glassdoor.com/Job/remote-${encodeURIComponent(query.replace(/\s+/g, '-').toLowerCase())}-jobs-SRCH_IL.0,6_IS11047_KO7,${7 + query.length}.htm`, {
+    const res = await fetchWithTimeout(`https://www.glassdoor.com/Job/remote-${encodeURIComponent(query.replace(/\s+/g, '-').toLowerCase())}-jobs-SRCH_IL.0,6_IS11047_KO7,${7 + query.length}.htm`, {
       headers: HEADERS,
     });
     const html = await res.text();
@@ -194,7 +202,7 @@ async function searchGlassdoor(query) {
 
 async function searchZipRecruiter(query) {
   try {
-    const res = await fetch(`https://www.ziprecruiter.com/jobs-search?search=${encodeURIComponent(query)}&location=Remote&refine_by_location_type=only_remote`, { headers: HEADERS });
+    const res = await fetchWithTimeout(`https://www.ziprecruiter.com/jobs-search?search=${encodeURIComponent(query)}&location=Remote&refine_by_location_type=only_remote`, { headers: HEADERS });
     const html = await res.text();
     const $ = cheerio.load(html);
     const jobs = [];
@@ -216,7 +224,7 @@ async function searchZipRecruiter(query) {
 
 async function searchFlexJobs(query) {
   try {
-    const res = await fetch(`https://www.flexjobs.com/search?search=${encodeURIComponent(query)}&tele_level%5B%5D=All+Telecommuting`, { headers: HEADERS });
+    const res = await fetchWithTimeout(`https://www.flexjobs.com/search?search=${encodeURIComponent(query)}&tele_level%5B%5D=All+Telecommuting`, { headers: HEADERS });
     const html = await res.text();
     const $ = cheerio.load(html);
     const jobs = [];
@@ -249,7 +257,7 @@ async function searchGreenhouseBoards() {
   const allJobs = [];
   for (const board of boards) {
     try {
-      const res = await fetch(`https://boards-api.greenhouse.io/v1/boards/${board}/jobs`, {
+      const res = await fetchWithTimeout(`https://boards-api.greenhouse.io/v1/boards/${board}/jobs`, {
         headers: { 'Accept': 'application/json' },
       });
       if (!res.ok) continue;
@@ -288,7 +296,7 @@ async function searchLeverBoards() {
   const allJobs = [];
   for (const board of boards) {
     try {
-      const res = await fetch(`https://api.lever.co/v0/postings/${board}?mode=json`, {
+      const res = await fetchWithTimeout(`https://api.lever.co/v0/postings/${board}?mode=json`, {
         headers: { 'Accept': 'application/json' },
       });
       if (!res.ok) continue;
@@ -323,7 +331,7 @@ async function searchLeverBoards() {
 
 async function searchSimplyHired(query) {
   try {
-    const res = await fetch(`https://www.simplyhired.com/search?q=${encodeURIComponent(query)}&l=remote&fdb=14`, { headers: HEADERS });
+    const res = await fetchWithTimeout(`https://www.simplyhired.com/search?q=${encodeURIComponent(query)}&l=remote&fdb=14`, { headers: HEADERS });
     const html = await res.text();
     const $ = cheerio.load(html);
     const jobs = [];
@@ -349,7 +357,7 @@ async function searchSimplyHired(query) {
 
 async function searchTheMuse() {
   try {
-    const res = await fetch('https://www.themuse.com/api/public/jobs?category=Marketing&level=Senior%20Level&location=Flexible%20/%20Remote&page=1', {
+    const res = await fetchWithTimeout('https://www.themuse.com/api/public/jobs?category=Marketing&level=Senior%20Level&location=Flexible%20/%20Remote&page=1', {
       headers: { 'Accept': 'application/json' },
     });
     const data = await res.json();
