@@ -178,10 +178,11 @@ app.post('/api/apply/auto', async (req, res) => {
       jobs.push(...tierJobs);
     }
     jobs.sort((a, b) => b.fit_score - a.fit_score);
-    // Filter to jobs with valid URLs, skip broken ones
+    // Filter to auto-apply-able jobs only — skip LinkedIn (blocked from cloud IPs)
     jobs = jobs.filter(j => {
       if (!j.url || !j.url.startsWith('http')) return false;
-      if (j.url.includes('remoteok.comhttps')) return false; // known broken URL
+      if (j.url.includes('remoteok.comhttps')) return false;
+      if (j.url.includes('linkedin.com')) return false; // LinkedIn blocks headless from cloud
       return true;
     });
 

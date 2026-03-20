@@ -335,17 +335,15 @@ async function searchGreenhouseBoards() {
       (data.jobs || []).forEach(j => {
         const title = j.title || '';
         const pos = title.toLowerCase();
-        if ((pos.includes('vp') || pos.includes('vice president') || pos.includes('head of') ||
-             pos.includes('director') || pos.includes('cmo') || pos.includes('chief marketing') ||
-             pos.includes('senior dir') || pos.includes('svp') || pos.includes('lead')) &&
-            (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
-             pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
-             pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms'))) {
+        if (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
+            pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
+            pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms') ||
+            pos.includes('gtm') || pos.includes('go-to-market') || pos.includes('cmo')) {
           const loc = j.location?.name || '';
           allJobs.push({
             source: 'Greenhouse', title, company: board.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
             location: loc, url: j.absolute_url || `https://boards.greenhouse.io/${board}/jobs/${j.id}`,
-            datePosted: j.updated_at || '', query: 'VP Marketing',
+            datePosted: j.updated_at || '', query: 'marketing',
             external_id: `gh-${board}-${j.id}`,
             easy_apply: true, apply_method: 'greenhouse',
           });
@@ -404,12 +402,10 @@ async function searchLeverBoards() {
       data.forEach(j => {
         const title = j.text || '';
         const pos = title.toLowerCase();
-        if ((pos.includes('vp') || pos.includes('vice president') || pos.includes('head of') ||
-             pos.includes('director') || pos.includes('cmo') || pos.includes('chief marketing') ||
-             pos.includes('senior dir') || pos.includes('svp') || pos.includes('lead')) &&
-            (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
-             pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
-             pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms'))) {
+        if (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
+            pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
+            pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms') ||
+            pos.includes('gtm') || pos.includes('go-to-market') || pos.includes('cmo')) {
           allJobs.push({
             source: 'Lever', title, company: board.replace(/([A-Z])/g, ' $1').trim(),
             location: j.categories?.location || 'Remote',
