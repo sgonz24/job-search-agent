@@ -178,12 +178,15 @@ app.post('/api/apply/auto', async (req, res) => {
       jobs.push(...tierJobs);
     }
     jobs.sort((a, b) => b.fit_score - a.fit_score);
-    // Filter to auto-apply-able jobs only — skip LinkedIn (blocked from cloud IPs)
+    // ONLY auto-apply to proven working sources: Greenhouse board forms + Lever board forms
     jobs = jobs.filter(j => {
       if (!j.url || !j.url.startsWith('http')) return false;
-      if (j.url.includes('remoteok.comhttps')) return false;
-      if (j.url.includes('linkedin.com')) return false; // LinkedIn blocks headless from cloud
-      return true;
+      const url = j.url.toLowerCase();
+      // Greenhouse board URLs (proven: Contentful, GitLab, Affirm, Mercury, Twilio)
+      if (url.includes('job-boards.greenhouse.io') || url.includes('boards.greenhouse.io')) return true;
+      // Lever hosted URLs
+      if (url.includes('jobs.lever.co')) return true;
+      return false;
     });
 
     if (jobs.length === 0) {
