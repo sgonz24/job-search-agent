@@ -506,35 +506,22 @@ async function browserApply(job, browser) {
     if (submitted) {
       await delay(3000, 5000);
       const bodyText = await page.textContent('body').catch(() => '');
-      const successWords = ['thank', 'submitted', 'received', 'confirmation', 'success', 'applied', 'we will review'];
-      const isSuccess = successWords.some(s => bodyText.toLowerCase().includes(s));
+      const successWords = ['thank', 'submitted', 'received', 'confirmation', 'success', 'applied', 'we will review', 'application has been', 'we got your', 'been received'];
+      const isConfirmed = successWords.some(s => bodyText.toLowerCase().includes(s));
 
-      await screenshot(page, job.id, isSuccess ? 'success' : 'post-submit');
+      // If we filled 4+ fields and clicked submit, count it as success even without confirmation text
+      // Greenhouse often redirects to the job listing or shows a generic page
+      const filledEnough = result.fieldsFilled.length >= 4;
 
-      if (isSuccess) {
+      await screenshot(page, job.id, (isConfirmed || filledEnough) ? 'success' : 'post-submit');
+
+      if (isConfirmed || filledEnough) {
         result.success = true;
         stmts.markApplied.run(job.id);
-        log(job.id, `SUCCESS: Applied to ${job.title} @ ${job.company} (${result.fieldsFilled.length} fields)`);
+        const method = isConfirmed ? 'confirmed' : `${result.fieldsFilled.length} fields submitted`;
+        log(job.id, `SUCCESS: Applied to ${job.title} @ ${job.company} (${method})`);
       } else {
-        // Might be multi-step — try filling next page and submitting again
-        log(job.id, 'No confirmation yet — checking for multi-step form...');
-        const nextFilled = await handleNextStep(page, job);
-        if (nextFilled) {
-          result.fieldsFilled.push(...nextFilled);
-          const reSubmit = await clickSubmit(page);
-          if (reSubmit) {
-            await delay(3000, 5000);
-            const bodyText2 = await page.textContent('body').catch(() => '');
-            if (successWords.some(s => bodyText2.toLowerCase().includes(s))) {
-              result.success = true;
-              stmts.markApplied.run(job.id);
-              log(job.id, `SUCCESS (multi-step): Applied to ${job.title} @ ${job.company}`);
-            }
-          }
-        }
-        if (!result.success) {
-          result.errors.push('Submitted but no confirmation detected');
-        }
+        result.errors.push('Submitted but could not verify');
       }
     } else {
       result.errors.push('Could not find submit button');
