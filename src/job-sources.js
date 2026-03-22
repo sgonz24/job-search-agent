@@ -325,33 +325,35 @@ async function searchGreenhouseBoards() {
     'zoom', 'slack', 'ringcentral', 'dialpad', 'vonage',
   ];
   const allJobs = [];
-  for (const board of boards) {
-    try {
-      const res = await fetchWithTimeout(`https://boards-api.greenhouse.io/v1/boards/${board}/jobs`, {
-        headers: { 'Accept': 'application/json' },
-      });
-      if (!res.ok) continue;
-      const data = await res.json();
-      (data.jobs || []).forEach(j => {
-        const title = j.title || '';
-        const pos = title.toLowerCase();
-        if (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
-            pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
-            pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms') ||
-            pos.includes('gtm') || pos.includes('go-to-market') || pos.includes('cmo')) {
-          const loc = j.location?.name || '';
-          allJobs.push({
-            source: 'Greenhouse', title, company: board.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-            location: loc, url: j.absolute_url || `https://boards.greenhouse.io/${board}/jobs/${j.id}`,
-            datePosted: j.updated_at || '', query: 'marketing',
-            external_id: `gh-${board}-${j.id}`,
-            easy_apply: true, apply_method: 'greenhouse',
-          });
-        }
-      });
-    } catch {}
-    await delay(300); // Rate limit
+  // Process boards in parallel batches of 25 for speed
+  for (let i = 0; i < boards.length; i += 25) {
+    const batch = boards.slice(i, i + 25);
+    const results = await Promise.all(batch.map(async board => {
+      try {
+        const res = await fetchWithTimeout(`https://boards-api.greenhouse.io/v1/boards/${board}/jobs`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data.jobs || []).filter(j => {
+          const pos = (j.title || '').toLowerCase();
+          return pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
+                 pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
+                 pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms') ||
+                 pos.includes('gtm') || pos.includes('go-to-market') || pos.includes('cmo');
+        }).map(j => ({
+          source: 'Greenhouse', title: j.title, company: board.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          location: j.location?.name || '', url: j.absolute_url || `https://boards.greenhouse.io/${board}/jobs/${j.id}`,
+          datePosted: j.updated_at || '', query: 'marketing',
+          external_id: `gh-${board}-${j.id}`,
+          easy_apply: true, apply_method: 'greenhouse',
+        }));
+      } catch { return []; }
+    }));
+    results.forEach(r => allJobs.push(...r));
+    if (i + 25 < boards.length) await delay(500);
   }
+  console.log(`  Greenhouse: ${allJobs.length} marketing roles from ${boards.length} boards`);
   return allJobs;
 }
 
@@ -392,35 +394,36 @@ async function searchLeverBoards() {
     'figma', 'framer', 'webflow', 'bubble', 'retool',
   ];
   const allJobs = [];
-  for (const board of boards) {
-    try {
-      const res = await fetchWithTimeout(`https://api.lever.co/v0/postings/${board}?mode=json`, {
-        headers: { 'Accept': 'application/json' },
-      });
-      if (!res.ok) continue;
-      const data = await res.json();
-      data.forEach(j => {
-        const title = j.text || '';
-        const pos = title.toLowerCase();
-        if (pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
-            pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
-            pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms') ||
-            pos.includes('gtm') || pos.includes('go-to-market') || pos.includes('cmo')) {
-          allJobs.push({
-            source: 'Lever', title, company: board.replace(/([A-Z])/g, ' $1').trim(),
-            location: j.categories?.location || 'Remote',
-            url: j.hostedUrl || j.applyUrl || '',
-            datePosted: j.createdAt ? new Date(j.createdAt).toISOString() : '',
-            query: 'VP Marketing',
-            external_id: `lever-${board}-${j.id}`,
-            easy_apply: true, apply_method: 'lever',
-            _applyUrl: j.applyUrl || '',
-          });
-        }
-      });
-    } catch {}
-    await delay(300);
+  // Process Lever boards in parallel batches of 15
+  for (let i = 0; i < boards.length; i += 15) {
+    const batch = boards.slice(i, i + 15);
+    const results = await Promise.all(batch.map(async board => {
+      try {
+        const res = await fetchWithTimeout(`https://api.lever.co/v0/postings/${board}?mode=json`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.filter(j => {
+          const pos = (j.text || '').toLowerCase();
+          return pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
+                 pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
+                 pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms') ||
+                 pos.includes('gtm') || pos.includes('go-to-market') || pos.includes('cmo');
+        }).map(j => ({
+          source: 'Lever', title: j.text, company: board.replace(/([A-Z])/g, ' $1').trim(),
+          location: j.categories?.location || 'Remote',
+          url: j.hostedUrl || j.applyUrl || '',
+          datePosted: j.createdAt ? new Date(j.createdAt).toISOString() : '',
+          query: 'marketing', external_id: `lever-${board}-${j.id}`,
+          easy_apply: true, apply_method: 'lever',
+        }));
+      } catch { return []; }
+    }));
+    results.forEach(r => allJobs.push(...r));
+    if (i + 15 < boards.length) await delay(500);
   }
+  console.log(`  Lever: ${allJobs.length} marketing roles from ${boards.length} boards`);
   return allJobs;
 }
 
