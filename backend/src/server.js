@@ -49,21 +49,17 @@ app.use('/api/apply', applyLimiter);
 // Dashboard stats — only count auto-apply-able jobs
 app.get('/api/stats', (req, res) => {
   const allJobs = stmts.getAllJobs.all();
-  const autoJobs = allJobs.filter(j => {
-    const url = (j.url || '').toLowerCase();
-    return url.includes('job-boards.greenhouse.io') || url.includes('boards.greenhouse.io') || url.includes('jobs.lever.co');
-  });
   const stats = {
-    total: autoJobs.length,
-    tier_a: autoJobs.filter(j => j.tier === 'A').length,
-    tier_b: autoJobs.filter(j => j.tier === 'B').length,
-    tier_c: autoJobs.filter(j => j.tier === 'C').length,
-    status_new: autoJobs.filter(j => j.status === 'new').length,
-    saved: autoJobs.filter(j => j.status === 'saved').length,
-    applied: autoJobs.filter(j => j.status === 'applied').length,
-    interviewing: autoJobs.filter(j => j.status === 'interviewing').length,
-    rejected: autoJobs.filter(j => j.status === 'rejected').length,
-    offers: autoJobs.filter(j => j.status === 'offer').length,
+    total: allJobs.length,
+    tier_a: allJobs.filter(j => j.tier === 'A').length,
+    tier_b: allJobs.filter(j => j.tier === 'B').length,
+    tier_c: allJobs.filter(j => j.tier === 'C').length,
+    status_new: allJobs.filter(j => j.status === 'new').length,
+    saved: allJobs.filter(j => j.status === 'saved').length,
+    applied: allJobs.filter(j => j.status === 'applied').length,
+    interviewing: allJobs.filter(j => j.status === 'interviewing').length,
+    rejected: allJobs.filter(j => j.status === 'rejected').length,
+    offers: allJobs.filter(j => j.status === 'offer').length,
   };
   const recentRuns = stmts.getSearchRuns.all(5);
   const lastRun = recentRuns[0] || null;
@@ -86,8 +82,8 @@ app.get('/api/jobs', (req, res) => {
     jobs = stmts.getAllJobs.all();
   }
 
-  // Only show auto-apply-able jobs (Greenhouse/Lever board URLs)
-  if (!req.query.showAll) {
+  // Optionally filter to only auto-apply-able jobs
+  if (req.query.autoApplyOnly) {
     jobs = jobs.filter(j => {
       const url = (j.url || '').toLowerCase();
       return url.includes('job-boards.greenhouse.io') || url.includes('boards.greenhouse.io') || url.includes('jobs.lever.co');
