@@ -1,0 +1,36 @@
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.75rem 1.25rem; border-bottom: 1px solid #1a1a2e; gap: 1rem;
+}
+.topbar-left { display: flex; align-items: center; gap: 0.75rem; }
+.topbar-title { font-size: 0.9rem; font-weight: 600; color: #fff; }
+.topbar-count {
+  font-size: 0.65rem; color: #555; background: #1a1a2e;
+  padding: 0.15rem 0.5rem; border-radius: 10px;
+}
+.topbar-search {
+  flex: 1; max-width: 280px; padding: 0.4rem 0.75rem;
+  border-radius: 8px; border: 1px solid #1a1a2e;
+  background: #0c0c14; color: #e5e5e5; font-size: 0.75rem;
+  font-family: 'Inter', sans-serif; outline: none;
+}
+.topbar-search:focus { border-color: #D4A017; }
+.topbar-search::placeholder { color: #333; }
+.topbar-right { display: flex; gap: 0.5rem; align-items: center; }
+.btn-scan {
+  padding: 0.4rem 1rem; border-radius: 8px; border: none;
+  background: #D4A017; color: #000; font-weight: 600;
+  font-size: 0.75rem; cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+.btn-scan:hover { background: #F0C040; }
+.btn-scan.running { background: #555; color: #fff; animation: pulse 1.5s infinite; }
+.btn-scan:disabled { cursor: not-allowed; opacity: 0.7; }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+.btn-auto-apply {
+  padding: 0.4rem 1rem; border-radius: 8px;
+  border: 1.5px solid #D4A017; background: transparent;
+  color: #D4A017; font-weight: 600; font-size: 0.75rem;
+  cursor: pointer; font-family: 'Inter', sans-serif; transition: all 0.2s;
+}
+.btn-auto-apply:hover { background: #D4A017; color: #000; }
