@@ -3,9 +3,9 @@
 
 const CANDIDATE_PROFILE = {
   name: "Sonny R. Gonzalez",
-  email: "sonny@aiforroi.co",
-  phone: "530.321.0560",
-  location: "San Marcos, CA",
+  email: process.env.RESUME_EMAIL || "",
+  phone: process.env.RESUME_PHONE || "",
+  location: process.env.RESUME_LOCATION || "",
   website: "aiforroi.co",
   workPreference: "Remote",
 

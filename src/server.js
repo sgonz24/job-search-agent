@@ -1,6 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
 const cron = require('node-cron');
 const path = require('path');
 const { db, stmts } = require('./db');
@@ -12,10 +14,35 @@ const PORT = process.env.PORT || 3001;
 // ── Middleware ───────────────────────────────────────────────────────
 
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
+  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
   credentials: true,
 }));
 app.use(express.json());
+app.use(helmet());
+
+// ── Auth: API key for mutating endpoints ────────────────────────────
+const API_KEY = process.env.API_KEY;
+function requireAuth(req, res, next) {
+  if (!API_KEY) return next(); // skip auth in dev if no key set
+  const key = req.headers['x-api-key'] || req.query.apiKey;
+  if (key !== API_KEY) return res.status(401).json({ error: 'Unauthorized' });
+  next();
+}
+// Apply auth to all mutating routes
+app.use((req, res, next) => {
+  if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+    return requireAuth(req, res, next);
+  }
+  next();
+});
+
+// ── Rate limiting ───────────────────────────────────────────────────
+const apiLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, message: { error: 'Too many requests' } });
+const searchLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 5, message: { error: 'Too many search requests' } });
+const applyLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 3, message: { error: 'Too many apply requests' } });
+app.use('/api/', apiLimiter);
+app.use('/api/search', searchLimiter);
+app.use('/api/apply', applyLimiter);
 
 // ── API Routes ──────────────────────────────────────────────────────
 
@@ -110,6 +137,9 @@ app.patch('/api/jobs/:id/status', (req, res) => {
 // Update job notes
 app.patch('/api/jobs/:id/notes', (req, res) => {
   const { notes } = req.body;
+  if (typeof notes !== 'string' || notes.length > 10000) {
+    return res.status(400).json({ error: 'Notes must be a string under 10000 characters' });
+  }
   stmts.updateJobNotes.run(notes, req.params.id);
   const job = stmts.getJobById.get(req.params.id);
   res.json(job);
@@ -186,7 +216,10 @@ app.post('/api/apply/auto', async (req, res) => {
     return res.status(409).json({ error: 'Auto-apply already in progress' });
   }
 
-  const { tiers = ['A'], maxApps = 5 } = req.body || {};
+  const { tiers: rawTiers = ['A'], maxApps: rawMax = 5 } = req.body || {};
+  const validTiers = ['A', 'B', 'C'];
+  const tiers = (Array.isArray(rawTiers) ? rawTiers : ['A']).filter(t => validTiers.includes(t));
+  const maxApps = Math.min(Math.max(Number(rawMax) || 5, 1), 25);
   applyInProgress = true;
   applyResults = null;
 
@@ -245,6 +278,11 @@ app.get('/api/apply/status', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString(), searchInProgress, applyInProgress });
 });
+
+app.use('/api/trending', require('./routes/trending'));
+app.use('/api/insights', require('./routes/insights'));
+app.use('/api/interview-prep', require('./routes/interview-prep'));
+app.use('/api/profile/links', require('./routes/profile'));
 
 // ── Cron: run search every 6 hours ─────────────────────────────────
 
