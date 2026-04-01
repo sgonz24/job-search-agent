@@ -1,0 +1,711 @@
+// Job Board Search Sources — VP Marketing remote roles
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
+// AbortController is global in Node 18+
+
+const SEARCH_QUERIES = [
+  "VP of Marketing remote",
+  "Vice President Marketing remote",
+  "Head of Marketing remote",
+  "CMO remote",
+  "VP Growth Marketing remote",
+  "VP Marketing AI",
+];
+
+// Fetch with 10 second timeout
+async function fetchWithTimeout(url, opts = {}, timeoutMs = 10000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    clearTimeout(timer);
+    return res;
+  } catch (err) {
+    clearTimeout(timer);
+    throw err;
+  }
+}
+
+const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
+const HEADERS = { 'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'en-US,en;q=0.9' };
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ══════════════════════════════════════════════════════════════════════
+// 1. LINKEDIN (public guest search)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchLinkedIn(query) {
+  const url = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}&location=United%20States&f_WT=2&f_E=5%2C6&start=0`;
+  try {
+    const res = await fetchWithTimeout(url, { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('div.base-card').each((i, el) => {
+      const title = $(el).find('h3.base-search-card__title').text().trim();
+      const company = $(el).find('h4.base-search-card__subtitle').text().trim();
+      const location = $(el).find('span.job-search-card__location').text().trim();
+      const link = $(el).find('a.base-card__full-link').attr('href') || '';
+      const datePosted = $(el).find('time').attr('datetime') || '';
+      // Detect Easy Apply from the listing badge
+      const cardText = $(el).text().toLowerCase();
+      const isEasyApply = cardText.includes('easy apply') || cardText.includes('easyapply');
+      if (title) jobs.push({ source: 'LinkedIn', title, company, location, url: link.split('?')[0], datePosted, query, easy_apply: isEasyApply });
+    });
+    return jobs;
+  } catch (err) { console.error(`  LinkedIn error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 2. INDEED
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchIndeed(query) {
+  try {
+    const res = await fetchWithTimeout(`https://www.indeed.com/jobs?q=${encodeURIComponent(query)}&l=Remote&sc=0kf%3Aattr(DSQF7)%3B&fromage=14&sort=date`, { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('div.job_seen_beacon, div.jobsearch-ResultsList div.cardOutline').each((i, el) => {
+      const title = $(el).find('h2.jobTitle span[title], h2 a span').text().trim();
+      const company = $(el).find('span[data-testid="company-name"], span.companyName').text().trim();
+      const location = $(el).find('div[data-testid="text-location"], div.companyLocation').text().trim();
+      const jobId = $(el).find('a[data-jk]').attr('data-jk') || '';
+      if (title) jobs.push({ source: 'Indeed', title, company, location, url: jobId ? `https://www.indeed.com/viewjob?jk=${jobId}` : '', query });
+    });
+    return jobs;
+  } catch (err) { console.error(`  Indeed error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 3. REMOTEOK (JSON API)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchRemoteOK() {
+  try {
+    const res = await fetchWithTimeout('https://remoteok.com/api', { headers: { 'User-Agent': UA, 'Accept': 'application/json' } });
+    const data = await res.json();
+    return data.filter(j => {
+      if (!j.position) return false;
+      const pos = j.position.toLowerCase();
+      const tags = (j.tags || []).join(' ').toLowerCase();
+      return (pos.includes('vp') || pos.includes('vice president') || pos.includes('head of') || pos.includes('cmo') || pos.includes('director'))
+        && (pos.includes('marketing') || tags.includes('marketing'));
+    }).map(j => ({
+      source: 'RemoteOK', title: j.position, company: j.company || '', location: 'Remote',
+      url: j.url ? (j.url.startsWith('http') ? j.url : `https://remoteok.com${j.url}`) : '', datePosted: j.date || '',
+      salary: j.salary_min ? `$${j.salary_min}-$${j.salary_max}` : '', query: 'marketing',
+    }));
+  } catch (err) { console.error(`  RemoteOK error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 4. WEWORKREMOTELY
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchWWR() {
+  try {
+    const res = await fetchWithTimeout('https://weworkremotely.com/categories/remote-marketing-jobs', { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('li.feature, li:not(.ad)').each((i, el) => {
+      const title = $(el).find('span.title').text().trim();
+      const company = $(el).find('span.company').text().trim();
+      const link = $(el).find('a[href*="/remote-jobs/"]').last().attr('href') || '';
+      if (title) {
+        const pos = title.toLowerCase();
+        if (pos.includes('vp') || pos.includes('vice president') || pos.includes('head of') || pos.includes('director') || pos.includes('cmo') || pos.includes('chief')) {
+          jobs.push({ source: 'WWR', title, company, location: 'Remote', url: link.startsWith('http') ? link : `https://weworkremotely.com${link}`, query: 'marketing' });
+        }
+      }
+    });
+    return jobs;
+  } catch (err) { console.error(`  WWR error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 5. BUILTIN
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchBuiltIn(query) {
+  try {
+    const res = await fetchWithTimeout(`https://builtin.com/jobs/remote?search=${encodeURIComponent(query)}`, { headers: { 'User-Agent': UA, 'Accept': 'text/html' } });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('div[data-id]').each((i, el) => {
+      const title = $(el).find('h2 a, h3 a').text().trim();
+      const company = $(el).find('.company-name, [data-testid="company-name"]').text().trim();
+      const link = $(el).find('h2 a, h3 a').attr('href') || '';
+      if (title) jobs.push({ source: 'BuiltIn', title, company, location: 'Remote', url: link.startsWith('http') ? link : `https://builtin.com${link}`, query });
+    });
+    return jobs;
+  } catch (err) { console.error(`  BuiltIn error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 6. WELLFOUND (formerly AngelList) — HTML scrape
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchWellfound() {
+  try {
+    const res = await fetchWithTimeout('https://wellfound.com/role/marketing/vp-of-marketing', { headers: HEADERS, redirect: 'follow' });
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('[data-test="StartupResult"], .styles_component__0QhET').each((i, el) => {
+      const title = $(el).find('[data-test="JobTitle"], .styles_title__xpQDw').text().trim();
+      const company = $(el).find('[data-test="StartupName"], .styles_name__Omaui').text().trim();
+      const salary = $(el).find('[data-test="Salary"], .styles_salary__il2fl').text().trim();
+      const link = $(el).find('a[href*="/jobs/"]').attr('href') || '';
+      if (title) jobs.push({
+        source: 'Wellfound', title, company, location: 'Remote',
+        url: link.startsWith('http') ? link : link ? `https://wellfound.com${link}` : '',
+        salary, query: 'VP Marketing',
+      });
+    });
+    return jobs;
+  } catch (err) { console.error(`  Wellfound error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 7. GLASSDOOR
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchGlassdoor(query) {
+  try {
+    const res = await fetchWithTimeout(`https://www.glassdoor.com/Job/remote-${encodeURIComponent(query.replace(/\s+/g, '-').toLowerCase())}-jobs-SRCH_IL.0,6_IS11047_KO7,${7 + query.length}.htm`, {
+      headers: HEADERS,
+    });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('li[data-test="jobListing"], .react-job-listing').each((i, el) => {
+      const title = $(el).find('[data-test="job-title"], .jobTitle').text().trim();
+      const company = $(el).find('.EmployerProfile_compactEmployerName__LE242, .jobHeader').text().trim();
+      const location = $(el).find('[data-test="emp-location"], .loc').text().trim();
+      const link = $(el).find('a[data-test="job-title"], a.jobTitle').attr('href') || '';
+      const salary = $(el).find('[data-test="detailSalary"], .salary-estimate').text().trim();
+      if (title) jobs.push({
+        source: 'Glassdoor', title, company, location: location || 'Remote',
+        url: link.startsWith('http') ? link : link ? `https://www.glassdoor.com${link}` : '',
+        salary, query,
+      });
+    });
+    return jobs;
+  } catch (err) { console.error(`  Glassdoor error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 8. ZIPRECRUITER
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchZipRecruiter(query) {
+  try {
+    const res = await fetchWithTimeout(`https://www.ziprecruiter.com/jobs-search?search=${encodeURIComponent(query)}&location=Remote&refine_by_location_type=only_remote`, { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('article.job_result, div.job_result_two_pane').each((i, el) => {
+      const title = $(el).find('h2.job_result_title, a.job_link').text().trim();
+      const company = $(el).find('a.t_org_link, .job_org').text().trim();
+      const location = $(el).find('.job_location, .location').text().trim();
+      const link = $(el).find('a.job_link, h2 a').attr('href') || '';
+      const salary = $(el).find('.job_salary, .salary_estimate').text().trim();
+      if (title) jobs.push({ source: 'ZipRecruiter', title, company, location: location || 'Remote', url: link, salary, query });
+    });
+    return jobs;
+  } catch (err) { console.error(`  ZipRecruiter error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 9. FLEXJOBS (via RSS/search)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchFlexJobs(query) {
+  try {
+    const res = await fetchWithTimeout(`https://www.flexjobs.com/search?search=${encodeURIComponent(query)}&tele_level%5B%5D=All+Telecommuting`, { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('li.job-post, div.sc-job-listing').each((i, el) => {
+      const title = $(el).find('a.job-link, h5, .job-title').text().trim();
+      const company = $(el).find('.employer, .company-name').text().trim();
+      const link = $(el).find('a.job-link, a[href*="/job/"]').attr('href') || '';
+      if (title) jobs.push({
+        source: 'FlexJobs', title, company, location: 'Remote',
+        url: link.startsWith('http') ? link : link ? `https://www.flexjobs.com${link}` : '', query,
+      });
+    });
+    return jobs;
+  } catch (err) { console.error(`  FlexJobs error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 10. GREENHOUSE JOB BOARDS (public boards — direct ATS listings)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchGreenhouseBoards() {
+  // Known companies with public Greenhouse boards and marketing VP roles
+  const boards = [
+    // Tier 1 — Big tech / known brands
+    'figma', 'stripe', 'notion', 'datadog', 'gitlab', 'cloudflare',
+    'hubspot', 'zapier', 'webflow', 'vercel', 'anthropic', 'openai',
+    'canva', 'intercom', 'shopify', 'twilio', 'segment', 'plaid',
+    // SaaS / Growth
+    'amplitude', 'gong', 'drata', 'contentful', 'klaviyo', 'attentive',
+    'jasper', 'runway', 'replit', 'ramp', 'brex', 'snyk',
+    'mixpanel', 'outreach', '6sense', 'hightouch', 'census', 'vanta',
+    'ironclad', 'docebo', 'sendbird', 'launchdarkly', 'storyblok',
+    'mutinyhq', 'drift', 'salesloft', 'seismic', 'clari', 'chorus',
+    // AI / ML
+    'cohere', 'copy-ai', 'stability-ai', 'huggingface', 'scale-ai',
+    'labelbox', 'weights-and-biases', 'together-ai', 'modal-labs',
+    'mistral', 'perplexity-ai', 'midjourney', 'synthesia',
+    // Fintech
+    'affirm', 'mercury', 'gusto', 'marqeta', 'melio', 'bill',
+    'navan', 'divvy', 'greenlight', 'chime', 'current',
+    'robinhood', 'sofi', 'betterment', 'wealthsimple',
+    // Security / DevTools
+    'tailscale', 'teleport', 'lacework', 'orca-security', 'wiz-io',
+    'semgrep', 'chainguard', 'snort', 'palo-alto-networks',
+    'hashicorp', 'grafana-labs', 'dbt-labs', 'airbyte', 'fivetran',
+    // E-commerce / Consumer
+    'bigcommerce', 'bolt', 'recharge', 'gorgias', 'yotpo',
+    'postscript', 'stamped', 'loopme', 'taboola', 'outbrain',
+    'the-trade-desk', 'liveramp', 'applovin', 'unity',
+    // Healthcare / Bio
+    'tempus', 'flatiron-health', 'ro', 'hims-and-hers', 'cerebral',
+    'color-health', 'devoted-health', 'clover-health',
+    // Real Estate / Proptech
+    'opendoor', 'compass', 'redfin', 'offerpad', 'zillow',
+    // Climate / Energy
+    'arcadia', 'palmetto', 'span-io', 'enphase', 'sunrun',
+    // HR / Recruiting
+    'rippling', 'deel', 'remote-com', 'oysterhr', 'justworks',
+    'lattice', 'culture-amp', 'leapsome', 'betterworks',
+    // Productivity / Collab
+    'miro', 'loom', 'calendly', 'airtable', 'coda', 'clickup',
+    'monday', 'asana', 'linear', 'height', 'shortcut',
+    // Media / Content
+    'buzzfeed', 'vox-media', 'substack', 'medium', 'spotify',
+    // Travel / Hospitality
+    'airbnb', 'tripadvisor', 'hopper', 'sonder', 'getaround',
+    // Education
+    'coursera', 'duolingo', 'masterclass', 'udemy', 'skillshare',
+    // Food / Delivery
+    'doordash', 'instacart', 'gopuff', 'sweetgreen', 'cava',
+    // Blockchain / Web3 / Crypto
+    'chainalysis', 'fireblocks', 'alchemy', 'consensys', 'polygon-technology',
+    'dapper-labs', 'opensea', 'uniswap-labs', 'aave', 'circle',
+    'blockfi', 'ripple', 'stellar', 'solana-labs', 'near-protocol',
+    'immutable', 'animoca-brands', 'yuga-labs', 'ledger',
+    'anchorage-digital', 'bitgo', 'gemini', 'kraken', 'blockchain-com',
+    'axie-infinity', 'the-sandbox-game', 'decentraland',
+    // Marketing / AdTech / MarTech
+    'hubspot', 'marketo', 'pardot', 'braze', 'iterable',
+    'customer-io', 'sailthru', 'leanplum', 'onesignal',
+    'appsflyer', 'branch', 'adjust', 'singular', 'kochava',
+    'the-trade-desk', 'pubmatic', 'magnite', 'index-exchange',
+    'sprinklr', 'hootsuite', 'sproutsocial', 'later', 'buffer',
+    'optimizely', 'vwo', 'ab-tasty', 'dynamic-yield',
+    'segment', 'tealium', 'lytics', 'blueconic', 'treasure-data',
+    // More tech companies
+    'okta', 'crowdstrike', 'paloalto', 'zscaler', 'fortinet',
+    'elastic', 'sumo-logic', 'new-relic', 'dynatrace',
+    'snowflake', 'databricks', 'confluent', 'cockroachdb',
+    'singlestore', 'timescale', 'neo4j', 'couchbase',
+    'docker', 'gitlab', 'github', 'bitbucket', 'circleci',
+    'twitch', 'discord', 'reddit', 'pinterest', 'snap',
+    'uber', 'lyft', 'grab', 'gojek', 'rappi',
+    'dropbox', 'box', 'notion', 'evernote', 'todoist',
+    'zoom', 'slack', 'ringcentral', 'dialpad', 'vonage',
+  ];
+  const allJobs = [];
+  // Process boards in parallel batches of 25 for speed
+  for (let i = 0; i < boards.length; i += 25) {
+    const batch = boards.slice(i, i + 25);
+    const results = await Promise.all(batch.map(async board => {
+      try {
+        const res = await fetchWithTimeout(`https://boards-api.greenhouse.io/v1/boards/${board}/jobs`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return (data.jobs || []).filter(j => {
+          const pos = (j.title || '').toLowerCase();
+          return pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
+                 pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
+                 pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms') ||
+                 pos.includes('gtm') || pos.includes('go-to-market') || pos.includes('cmo');
+        }).map(j => ({
+          source: 'Greenhouse', title: j.title, company: board.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
+          location: j.location?.name || '', url: j.absolute_url || `https://boards.greenhouse.io/${board}/jobs/${j.id}`,
+          datePosted: j.updated_at || '', query: 'marketing',
+          external_id: `gh-${board}-${j.id}`,
+          easy_apply: true, apply_method: 'greenhouse',
+        }));
+      } catch { return []; }
+    }));
+    results.forEach(r => allJobs.push(...r));
+    if (i + 25 < boards.length) await delay(500);
+  }
+  console.log(`  Greenhouse: ${allJobs.length} marketing roles from ${boards.length} boards`);
+  return allJobs;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 11. LEVER JOB BOARDS (public boards — direct ATS listings)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchLeverBoards() {
+  const boards = [
+    // Big names
+    'Netflix', 'coinbase', 'atlassian', 'databricks', 'Grammarly',
+    'samsara', 'confluent', 'mongodb', 'squarespace', 'toast',
+    'noom', 'pagerduty', 'sourcegraph', 'retool', 'postman',
+    // Growth / SaaS
+    'nerdwallet', 'carta', 'faire', 'anduril', 'scale',
+    'lucid', 'GOAT-Group', 'upstart', 'wealthfront',
+    'benchling', 'cockroachlabs', 'coreweave', 'stytch',
+    'crossbeam', 'Harness', 'heap', 'JumpCloud', 'temporal',
+    'readme', 'ngrok', 'WorkOS', 'PlanetScale', 'netlify',
+    // Consumer
+    'sweetgreen', 'thumbtack', 'TripActions', 'olo',
+    // HR / People
+    'lattice', 'SmartRecruiters', 'onemedical', 'momentive',
+    // Fintech
+    'chime', 'newrelic', 'Zscaler', 'Litmus', 'Prefect',
+    // AI
+    'adept', 'cohere', 'character-ai', 'inflection-ai',
+    // Marketing / AdTech
+    'branch', 'appsflyer', 'braze', 'iterable', 'customer-io',
+    'sendgrid', 'mailchimp', 'constant-contact',
+    // Blockchain / Web3
+    'phantom', 'magic-eden', 'moonpay', 'transak', 'wyre',
+    'sui', 'aptos-labs', 'layerzero-labs', 'eigenlayer',
+    'offchain-labs', 'matter-labs', 'starkware', 'aztec',
+    // More tech
+    'vercel', 'supabase', 'planetscale', 'turso', 'neon',
+    'render', 'railway', 'fly-io', 'deno', 'bun',
+    'figma', 'framer', 'webflow', 'bubble', 'retool',
+  ];
+  const allJobs = [];
+  // Process Lever boards in parallel batches of 15
+  for (let i = 0; i < boards.length; i += 15) {
+    const batch = boards.slice(i, i + 15);
+    const results = await Promise.all(batch.map(async board => {
+      try {
+        const res = await fetchWithTimeout(`https://api.lever.co/v0/postings/${board}?mode=json`, {
+          headers: { 'Accept': 'application/json' },
+        });
+        if (!res.ok) return [];
+        const data = await res.json();
+        return data.filter(j => {
+          const pos = (j.text || '').toLowerCase();
+          return pos.includes('marketing') || pos.includes('growth') || pos.includes('demand') ||
+                 pos.includes('brand') || pos.includes('content') || pos.includes('digital') ||
+                 pos.includes('acquisition') || pos.includes('lifecycle') || pos.includes('comms') ||
+                 pos.includes('gtm') || pos.includes('go-to-market') || pos.includes('cmo');
+        }).map(j => ({
+          source: 'Lever', title: j.text, company: board.replace(/([A-Z])/g, ' $1').trim(),
+          location: j.categories?.location || 'Remote',
+          url: j.hostedUrl || j.applyUrl || '',
+          datePosted: j.createdAt ? new Date(j.createdAt).toISOString() : '',
+          query: 'marketing', external_id: `lever-${board}-${j.id}`,
+          easy_apply: true, apply_method: 'lever',
+        }));
+      } catch { return []; }
+    }));
+    results.forEach(r => allJobs.push(...r));
+    if (i + 15 < boards.length) await delay(500);
+  }
+  console.log(`  Lever: ${allJobs.length} marketing roles from ${boards.length} boards`);
+  return allJobs;
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 12. SIMPLYHIRED
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchSimplyHired(query) {
+  try {
+    const res = await fetchWithTimeout(`https://www.simplyhired.com/search?q=${encodeURIComponent(query)}&l=remote&fdb=14`, { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('article[data-jobkey], li.SerpJob').each((i, el) => {
+      const title = $(el).find('h2 a, .jobposting-title').text().trim();
+      const company = $(el).find('[data-testid="companyName"], .jobposting-company').text().trim();
+      const location = $(el).find('[data-testid="searchSerpJobLocation"], .jobposting-location').text().trim();
+      const link = $(el).find('h2 a, a[data-mdref]').attr('href') || '';
+      const salary = $(el).find('.jobposting-salary, .SerpJob-metaInfoLeft').text().trim();
+      if (title) jobs.push({
+        source: 'SimplyHired', title, company, location: location || 'Remote',
+        url: link.startsWith('http') ? link : link ? `https://www.simplyhired.com${link}` : '',
+        salary, query,
+      });
+    });
+    return jobs;
+  } catch (err) { console.error(`  SimplyHired error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 13. THE MUSE
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchTheMuse() {
+  try {
+    const res = await fetchWithTimeout('https://www.themuse.com/api/public/jobs?category=Marketing&level=Senior%20Level&location=Flexible%20/%20Remote&page=1', {
+      headers: { 'Accept': 'application/json' },
+    });
+    const data = await res.json();
+    return (data.results || []).filter(j => {
+      const pos = (j.name || '').toLowerCase();
+      return pos.includes('vp') || pos.includes('vice president') || pos.includes('head of') || pos.includes('director') || pos.includes('cmo');
+    }).map(j => ({
+      source: 'TheMuse', title: j.name || '', company: j.company?.name || '',
+      location: 'Remote', url: j.refs?.landing_page || '',
+      datePosted: j.publication_date || '', query: 'VP Marketing',
+    }));
+  } catch (err) { console.error(`  TheMuse error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 14. DYNAMITE JOBS (100% remote-first)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchDynamiteJobs() {
+  try {
+    const res = await fetchWithTimeout('https://dynamitejobs.com/remote-marketing-jobs', { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('a[href*="/job/"], .job-card, .job-listing').each((i, el) => {
+      const title = $(el).find('h2, h3, .job-title, .title').text().trim() || $(el).text().trim().split('\n')[0];
+      const company = $(el).find('.company, .company-name').text().trim();
+      const link = $(el).attr('href') || $(el).find('a').attr('href') || '';
+      if (title && title.length < 100) {
+        const pos = title.toLowerCase();
+        if (pos.includes('vp') || pos.includes('director') || pos.includes('head of') || pos.includes('cmo') || pos.includes('lead')) {
+          jobs.push({ source: 'DynamiteJobs', title, company, location: 'Remote',
+            url: link.startsWith('http') ? link : link ? `https://dynamitejobs.com${link}` : '', query: 'marketing' });
+        }
+      }
+    });
+    return jobs;
+  } catch (err) { console.error(`  DynamiteJobs error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 15. DAILY REMOTE (186K+ listings)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchDailyRemote() {
+  try {
+    const res = await fetchWithTimeout('https://dailyremote.com/remote-marketing-jobs', { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('.job-item, .card, a[href*="/remote-job/"]').each((i, el) => {
+      const title = $(el).find('h2, h3, .title, .job-title').text().trim() || $(el).text().trim().split('\n')[0];
+      const company = $(el).find('.company, .company-name, .text-muted').text().trim();
+      const link = $(el).attr('href') || $(el).find('a').attr('href') || '';
+      if (title && title.length < 100) {
+        const pos = title.toLowerCase();
+        if (pos.includes('vp') || pos.includes('director') || pos.includes('head of') || pos.includes('cmo') || pos.includes('lead') || pos.includes('chief')) {
+          jobs.push({ source: 'DailyRemote', title, company, location: 'Remote',
+            url: link.startsWith('http') ? link : link ? `https://dailyremote.com${link}` : '', query: 'marketing' });
+        }
+      }
+    });
+    return jobs;
+  } catch (err) { console.error(`  DailyRemote error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 16. WORKING NOMADS (remote + digital nomad)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchWorkingNomads() {
+  try {
+    const res = await fetchWithTimeout('https://www.workingnomads.com/api/exposed_jobs/?category=marketing', {
+      headers: { 'Accept': 'application/json', 'User-Agent': UA },
+    });
+    const data = await res.json();
+    return (data || []).filter(j => {
+      const pos = (j.title || '').toLowerCase();
+      return pos.includes('vp') || pos.includes('director') || pos.includes('head of') || pos.includes('cmo') || pos.includes('lead') || pos.includes('chief');
+    }).map(j => ({
+      source: 'WorkingNomads', title: j.title || '', company: j.company_name || '',
+      location: 'Remote', url: j.url || '', datePosted: j.pub_date || '', query: 'marketing',
+    }));
+  } catch (err) { console.error(`  WorkingNomads error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 17. NODESK (curated remote)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchNoDesk() {
+  try {
+    const res = await fetchWithTimeout('https://nodesk.co/remote-jobs/marketing/', { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('a[href*="/remote-jobs/"], .job-listing, .card').each((i, el) => {
+      const title = $(el).find('h2, h3, .title').text().trim() || $(el).text().trim().split('\n')[0];
+      const company = $(el).find('.company').text().trim();
+      const link = $(el).attr('href') || $(el).find('a').attr('href') || '';
+      if (title && title.length < 100) {
+        const pos = title.toLowerCase();
+        if (pos.includes('vp') || pos.includes('director') || pos.includes('head') || pos.includes('cmo') || pos.includes('lead')) {
+          jobs.push({ source: 'NoDesk', title, company, location: 'Remote',
+            url: link.startsWith('http') ? link : link ? `https://nodesk.co${link}` : '', query: 'marketing' });
+        }
+      }
+    });
+    return jobs;
+  } catch (err) { console.error(`  NoDesk error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 18. MARKETINGHIRE (AMA/DMA/BMA partner)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchMarketingHire() {
+  try {
+    const res = await fetchWithTimeout('https://www.marketinghire.com/jobs?q=vp+marketing+remote', { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('.job-listing, .job-card, a[href*="/job/"]').each((i, el) => {
+      const title = $(el).find('h2, h3, .title').text().trim();
+      const company = $(el).find('.company').text().trim();
+      const link = $(el).attr('href') || $(el).find('a').attr('href') || '';
+      if (title) jobs.push({ source: 'MarketingHire', title, company, location: 'Remote',
+        url: link.startsWith('http') ? link : link ? `https://www.marketinghire.com${link}` : '', query: 'VP marketing' });
+    });
+    return jobs;
+  } catch (err) { console.error(`  MarketingHire error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 19. EXIT FIVE (B2B marketing community)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchExitFive() {
+  try {
+    const res = await fetchWithTimeout('https://www.exitfive.com/jobs', { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('a[href*="/job"], .job-card, .listing').each((i, el) => {
+      const title = $(el).find('h2, h3, .title').text().trim() || $(el).text().trim().split('\n')[0];
+      const company = $(el).find('.company').text().trim();
+      const link = $(el).attr('href') || $(el).find('a').attr('href') || '';
+      if (title && title.length < 100) {
+        const pos = title.toLowerCase();
+        if (pos.includes('vp') || pos.includes('director') || pos.includes('head') || pos.includes('cmo') || pos.includes('lead') || pos.includes('marketing')) {
+          jobs.push({ source: 'ExitFive', title, company, location: 'Remote',
+            url: link.startsWith('http') ? link : link ? `https://www.exitfive.com${link}` : '', query: 'B2B marketing' });
+        }
+      }
+    });
+    return jobs;
+  } catch (err) { console.error(`  ExitFive error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 20. AMA JOB BOARD (American Marketing Association)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchAMA() {
+  try {
+    const res = await fetchWithTimeout('https://jobs.ama.org/jobs/?keywords=vp+marketing&location=remote', { headers: HEADERS });
+    const html = await res.text();
+    const $ = cheerio.load(html);
+    const jobs = [];
+    $('.job-result, .lister__item, a[href*="/job/"]').each((i, el) => {
+      const title = $(el).find('h3, h2, .lister__header').text().trim();
+      const company = $(el).find('.lister__meta--employer, .company').text().trim();
+      const link = $(el).find('a').attr('href') || $(el).attr('href') || '';
+      if (title) jobs.push({ source: 'AMA', title, company, location: 'Remote',
+        url: link.startsWith('http') ? link : link ? `https://jobs.ama.org${link}` : '', query: 'VP marketing' });
+    });
+    return jobs;
+  } catch (err) { console.error(`  AMA error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// MAIN ORCHESTRATOR
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchAllSources(queries = SEARCH_QUERIES) {
+  console.log('\n[sources] Searching 20 job boards + 260 company boards for VP Marketing remote...\n');
+  const allJobs = [];
+  const seen = new Set();
+
+  function addJobs(jobs) {
+    jobs.forEach(job => {
+      if (!job.title) return;
+      const key = `${job.title.toLowerCase().replace(/[^a-z0-9]/g, '')}-${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+      if (!seen.has(key)) { seen.add(key); allJobs.push(job); }
+    });
+  }
+
+  // ── Wave 1: API-based sources (fast, most reliable) ──
+  console.log('  Wave 1: APIs (RemoteOK, Greenhouse 200+, Lever 60+, TheMuse, WorkingNomads)');
+  const wave1 = await Promise.all([
+    searchRemoteOK(),
+    searchGreenhouseBoards(),
+    searchLeverBoards(),
+    searchTheMuse(),
+    searchWorkingNomads(),
+    searchWellfound(),
+  ]);
+  wave1.forEach(addJobs);
+  console.log(`  → Wave 1: ${allJobs.length} jobs`);
+
+  // ── Wave 2: Major boards with query-based search ──
+  console.log('  Wave 2: LinkedIn, Indeed, Glassdoor, ZipRecruiter, SimplyHired');
+  for (const query of queries) {
+    console.log(`    Searching: "${query}"`);
+    const results = await Promise.all([
+      searchLinkedIn(query),
+      searchIndeed(query),
+      searchGlassdoor(query),
+      searchZipRecruiter(query),
+      searchSimplyHired(query),
+    ]);
+    results.forEach(addJobs);
+    await delay(2000);
+  }
+
+  // ── Wave 3: Niche & remote-first boards ──
+  console.log('  Wave 3: Niche boards (WWR, BuiltIn, FlexJobs, DynamiteJobs, DailyRemote, NoDesk, MarketingHire, ExitFive, AMA)');
+  const wave3 = await Promise.all([
+    searchWWR(),
+    searchBuiltIn('VP Marketing'),
+    searchBuiltIn('CMO'),
+    searchBuiltIn('Head of Marketing'),
+    searchBuiltIn('Director Marketing'),
+    searchFlexJobs('VP Marketing remote'),
+    searchFlexJobs('CMO remote'),
+    searchDynamiteJobs(),
+    searchDailyRemote(),
+    searchNoDesk(),
+    searchMarketingHire(),
+    searchExitFive(),
+    searchAMA(),
+  ]);
+  wave3.forEach(addJobs);
+
+  console.log(`\n[sources] Total: ${allJobs.length} unique jobs across 20 sources\n`);
+  return allJobs;
+}
+
+module.exports = { searchAllSources, SEARCH_QUERIES };
