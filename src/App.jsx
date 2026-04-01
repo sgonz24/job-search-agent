@@ -9,6 +9,10 @@ import BoardView from './components/BoardView'
 import ContextPanel from './components/ContextPanel'
 import JobDrawer from './components/JobDrawer'
 import AutoApplyPanel from './components/AutoApplyPanel'
+import ResumeView from './components/ResumeView'
+import InterviewPrepView from './components/InterviewPrepView'
+import LinksView from './components/LinksView'
+import SettingsView from './components/SettingsView'
 import './App.css'
 
 const API = import.meta.env.VITE_API_URL || ''
@@ -134,13 +138,13 @@ export default function App() {
       case 'board':
         return <BoardView jobs={filtered} selectedJobId={selectedJob?.id} onSelectJob={(j) => setSelectedJob(j)} />
       case 'resume':
-        return <div className="placeholder-view"><h2>Resume</h2><p>Coming soon — upload, preview, and track resume versions.</p></div>
+        return <ResumeView />
       case 'prep':
-        return <div className="placeholder-view"><h2>Interview Prep</h2><p>Coming soon — full question bank by company and category.</p></div>
+        return <InterviewPrepView />
       case 'links':
-        return <div className="placeholder-view"><h2>Links &amp; Portfolio</h2><p>Coming soon — manage your web presence links.</p></div>
+        return <LinksView />
       case 'settings':
-        return <div className="placeholder-view"><h2>Settings</h2><p>Coming soon — configure scan sources and auto-apply preferences.</p></div>
+        return <SettingsView />
       default:
         return (
           <div className="pipeline">

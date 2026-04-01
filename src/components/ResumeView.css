@@ -1,0 +1,113 @@
+.resume-view { flex: 1; padding: 2rem; overflow-y: auto; }
+.resume-view::-webkit-scrollbar { width: 3px; }
+.resume-view::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+.rv-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 1.5rem; gap: 1rem;
+}
+.rv-header h2 { font-size: 1.2rem; color: #fff; margin-bottom: 0.3rem; }
+.rv-subtitle { font-size: 0.78rem; color: #555; line-height: 1.5; }
+.rv-add-btn {
+  padding: 0.45rem 1rem; border-radius: 8px;
+  border: 1.5px solid #D4A017; background: transparent;
+  color: #D4A017; font-size: 0.78rem; cursor: pointer;
+  font-family: 'Inter', sans-serif; font-weight: 600; transition: all 0.15s;
+}
+.rv-add-btn:hover { background: #D4A017; color: #000; }
+
+.rv-add-form {
+  background: #0c0c14; border: 1px solid #1a1a2e;
+  border-radius: 10px; padding: 1rem; margin-bottom: 1rem;
+}
+.rv-add-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.rv-input {
+  flex: 1; padding: 0.4rem 0.6rem; border-radius: 6px;
+  border: 1px solid #1a1a2e; background: #09090b; color: #e5e5e5;
+  font-size: 0.78rem; font-family: 'Inter', sans-serif; outline: none;
+}
+.rv-input:focus { border-color: #D4A017; }
+.rv-input::placeholder { color: #333; }
+.rv-save-btn {
+  padding: 0.4rem 1rem; border-radius: 6px; border: none;
+  background: #D4A017; color: #000; font-weight: 600;
+  font-size: 0.78rem; cursor: pointer; font-family: 'Inter', sans-serif;
+}
+
+.rv-layout { display: grid; grid-template-columns: 280px 1fr; gap: 1.5rem; }
+
+/* Version list */
+.rv-versions { display: flex; flex-direction: column; gap: 0.4rem; }
+.rv-versions-label {
+  font-size: 0.55rem; color: #444; text-transform: uppercase;
+  letter-spacing: 1px; font-weight: 600; margin-bottom: 0.3rem;
+}
+.rv-version-card {
+  display: flex; align-items: center; gap: 0.6rem;
+  padding: 0.65rem 0.75rem; background: #0c0c14;
+  border: 1px solid #1a1a2e; border-radius: 8px;
+  cursor: pointer; transition: all 0.15s;
+}
+.rv-version-card:hover { border-color: #252540; }
+.rv-version-card.active { border-color: #D4A017; background: #111118; }
+.rv-v-icon { font-size: 1.2rem; }
+.rv-v-info { flex: 1; min-width: 0; }
+.rv-v-name { font-size: 0.72rem; color: #ccc; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rv-v-date { font-size: 0.6rem; color: #444; }
+.rv-v-badge {
+  font-size: 0.55rem; padding: 0.1rem 0.4rem; border-radius: 8px;
+  background: rgba(212,160,23,0.15); color: #D4A017; flex-shrink: 0;
+}
+
+/* Detail */
+.rv-detail { display: flex; flex-direction: column; gap: 1.25rem; }
+.rv-preview {
+  background: #0c0c14; border: 1px solid #1a1a2e;
+  border-radius: 10px; overflow: hidden;
+}
+.rv-preview-placeholder {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 3rem 2rem; text-align: center;
+}
+.rv-preview-icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+.rv-preview-placeholder h3 { font-size: 0.95rem; color: #fff; margin-bottom: 0.3rem; }
+.rv-preview-date { font-size: 0.7rem; color: #444; margin-bottom: 0.75rem; }
+.rv-preview-link {
+  padding: 0.45rem 1.25rem; border-radius: 8px;
+  background: #D4A017; color: #000; text-decoration: none;
+  font-weight: 600; font-size: 0.8rem; transition: all 0.2s;
+}
+.rv-preview-link:hover { background: #F0C040; }
+.rv-preview-hint { font-size: 0.72rem; color: #555; max-width: 350px; line-height: 1.5; }
+
+.rv-sent-section h4 {
+  font-size: 0.6rem; color: #444; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 0.4rem;
+}
+.rv-sent-list { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+.rv-sent-chip {
+  font-size: 0.65rem; padding: 0.2rem 0.5rem; border-radius: 6px;
+  background: rgba(212,160,23,0.1); color: #D4A017;
+  border: 1px solid rgba(212,160,23,0.15);
+}
+
+.rv-empty { text-align: center; color: #333; padding: 3rem; font-size: 0.85rem; }
+
+/* Tips */
+.rv-tips h4 {
+  font-size: 0.6rem; color: #444; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 0.6rem;
+}
+.rv-tips-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+.rv-tip-card {
+  display: flex; gap: 0.6rem; padding: 0.75rem;
+  background: #0c0c14; border: 1px solid #1a1a2e; border-radius: 8px;
+}
+.rv-tip-icon { font-size: 1.1rem; flex-shrink: 0; }
+.rv-tip-title { font-size: 0.72rem; color: #ccc; font-weight: 600; margin-bottom: 0.2rem; }
+.rv-tip-body { font-size: 0.65rem; color: #555; line-height: 1.5; }
+
+@media (max-width: 900px) {
+  .rv-layout { grid-template-columns: 1fr; }
+  .rv-tips-grid { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,89 @@
+.settings-view { flex: 1; padding: 2rem; overflow-y: auto; max-width: 700px; }
+.settings-view::-webkit-scrollbar { width: 3px; }
+.settings-view::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+.sv-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 1.5rem;
+}
+.sv-header h2 { font-size: 1.2rem; color: #fff; margin-bottom: 0.3rem; }
+.sv-subtitle { font-size: 0.78rem; color: #555; }
+.sv-save-btn {
+  padding: 0.45rem 1.25rem; border-radius: 8px; border: none;
+  background: #D4A017; color: #000; font-weight: 600;
+  font-size: 0.78rem; cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+.sv-save-btn:hover { background: #F0C040; }
+
+.sv-sections { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.sv-section {
+  background: #0c0c14; border: 1px solid #1a1a2e;
+  border-radius: 10px; padding: 1.25rem;
+}
+.sv-section h3 { font-size: 0.85rem; color: #fff; margin-bottom: 0.75rem; }
+.sv-section-desc { font-size: 0.72rem; color: #555; margin-bottom: 0.75rem; }
+
+.sv-field { margin-bottom: 0.75rem; }
+.sv-field:last-child { margin-bottom: 0; }
+.sv-field label {
+  display: block; font-size: 0.6rem; color: #444;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  font-weight: 600; margin-bottom: 0.3rem;
+}
+.sv-input {
+  width: 100%; padding: 0.45rem 0.6rem; border-radius: 6px;
+  border: 1px solid #1a1a2e; background: #09090b; color: #e5e5e5;
+  font-size: 0.8rem; font-family: 'Inter', sans-serif; outline: none;
+}
+.sv-input:focus { border-color: #D4A017; }
+.sv-input::placeholder { color: #333; }
+
+.sv-salary-row { display: flex; align-items: center; gap: 0; }
+.sv-salary-prefix {
+  padding: 0.45rem 0.6rem; background: #111118;
+  border: 1px solid #1a1a2e; border-right: none;
+  border-radius: 6px 0 0 6px; color: #666; font-size: 0.8rem;
+}
+.sv-salary-row .sv-input { border-radius: 0 6px 6px 0; }
+
+.sv-select {
+  padding: 0.45rem 0.6rem; border-radius: 6px;
+  border: 1px solid #1a1a2e; background: #09090b; color: #e5e5e5;
+  font-size: 0.8rem; font-family: 'Inter', sans-serif;
+}
+
+.sv-tier-btns { display: flex; gap: 0.4rem; }
+.sv-tier-btn {
+  padding: 0.35rem 0.8rem; border-radius: 6px;
+  border: 1px solid #1a1a2e; background: transparent;
+  color: #555; font-size: 0.75rem; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.15s;
+}
+.sv-tier-btn:hover { border-color: #D4A017; color: #fff; }
+.sv-tier-btn.active { background: #1a1a2e; color: #D4A017; border-color: #D4A017; }
+
+/* Toggles */
+.sv-toggles { display: flex; flex-direction: column; gap: 0.3rem; }
+.sv-toggle-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0.5rem 0; cursor: pointer; border-bottom: 1px solid #0f0f18;
+}
+.sv-toggle-row:last-child { border-bottom: none; }
+.sv-toggle-label { font-size: 0.78rem; color: #aaa; }
+.sv-toggle {
+  width: 36px; height: 20px; border-radius: 10px;
+  background: #1a1a2e; position: relative; transition: background 0.2s;
+}
+.sv-toggle.on { background: #D4A017; }
+.sv-toggle-knob {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #fff; position: absolute; top: 2px; left: 2px;
+  transition: transform 0.2s;
+}
+.sv-toggle.on .sv-toggle-knob { transform: translateX(16px); }
+
+.sv-about p { font-size: 0.78rem; color: #666; }
+.sv-about a { color: #D4A017; text-decoration: none; }
+.sv-version { font-size: 0.65rem; color: #333; margin-top: 0.3rem; }
