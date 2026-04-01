@@ -79,7 +79,7 @@ export default function ResumeView() {
                   <h3>{current.name}</h3>
                   <p className="rv-preview-date">Added {current.date}</p>
                   {current.url ? (
-                    <a href={current.url} target="_blank" rel="noopener" className="rv-preview-link">Open Resume ↗</a>
+                    <a href={current.url} target="_blank" rel="noopener noreferrer" className="rv-preview-link">Open Resume ↗</a>
                   ) : (
                     <p className="rv-preview-hint">Add a URL to your resume file (Google Drive, Dropbox, etc.) to enable quick access.</p>
                   )}

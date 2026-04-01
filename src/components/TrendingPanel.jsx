@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
 import './TrendingPanel.css'
 
+function renderTweetBody(html) {
+  const parts = html.split(/(<b>|<\/b>)/g).filter(Boolean)
+  let bold = false
+  return parts.map((part, i) => {
+    if (part === '<b>') { bold = true; return null }
+    if (part === '</b>') { bold = false; return null }
+    return bold ? <strong key={i}>{part}</strong> : part
+  })
+}
+
 const MOCK_TWEETS = [
   { id: 1, name: 'Anthropic', handle: '@AnthropicAI', avatar: '#1d9bf0', time: '2h', body: '<b>Claude Code</b> now supports autonomous multi-file editing with tool use.', tags: [{ label: 'AI', color: 'ai' }, { label: 'Claude', color: 'claude' }], likes: '4.8K', retweets: '1.2K', comments: '342' },
   { id: 2, name: 'Lenny Rachitsky', handle: '@lennysan', avatar: '#666', time: '5h', body: 'The best <b>VP of Marketing</b> hires all had one thing in common: they could tie every campaign back to revenue within 48 hours.', tags: [{ label: 'Career', color: 'career' }], likes: '2.1K', retweets: '410', comments: '89' },
@@ -52,7 +62,7 @@ export default function TrendingPanel({ collapsed, onToggleCollapse }) {
               </div>
               <span className="tweet-time">{t.time}</span>
             </div>
-            <div className="tweet-body" dangerouslySetInnerHTML={{ __html: t.body }} />
+            <div className="tweet-body">{renderTweetBody(t.body)}</div>
             <div className="tweet-tags">
               {t.tags.map((tag, i) => <span key={i} className={`tweet-tag ${tag.color}`}>{tag.label}</span>)}
             </div>

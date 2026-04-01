@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobHQ — Layout Proposal</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #09090b; color: #e5e5e5; overflow-x: hidden; }
+
+  .proposal-header {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .proposal-header h1 { font-size: 1.4rem; color: #fff; font-weight: 700; }
+  .proposal-header h1 span { color: #D4A017; }
+  .proposal-header p { color: #555; font-size: 0.8rem; margin-top: 0.3rem; }
+
+  .mockup-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+
+  .mockup-label {
+    font-size: 0.65rem;
+    color: #D4A017;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ═══ The App Mockup ═══ */
+  .app-frame {
+    background: #0a0a0f;
+    border: 1px solid #1a1a2e;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  }
+
+  .app-layout {
+    display: flex;
+    min-height: 520px;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 64px;
+    background: #0c0c14;
+    border-right: 1px solid #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+  .sb-logo {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #D4A017, #F0C040);
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.7rem; color: #000;
+  }
+  .sb-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #444;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .sb-icon:hover { background: #1a1a2e; color: #888; }
+  .sb-icon.active { background: #1a1a2e; color: #D4A017; }
+  .sb-icon .sb-label {
+    display: none;
+    position: absolute;
+    left: 48px;
+    background: #222;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    z-index: 10;
+  }
+  .sb-icon:hover .sb-label { display: block; }
+  .sb-badge {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    border: 2px solid #0c0c14;
+  }
+  .sb-spacer { flex: 1; }
+  .sb-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #333, #555);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.55rem; color: #aaa; font-weight: 600;
+  }
+
+  /* ── Main Content ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #1a1a2e;
+    gap: 1rem;
+  }
+  .topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .topbar-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #fff;
+  }
+  .topbar-count {
+    font-size: 0.65rem;
+    color: #555;
+    background: #1a1a2e;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+  }
+  .topbar-search {
+    flex: 1;
+    max-width: 280px;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    border: 1px solid #1a1a2e;
+    background: #0c0c14;
+    color: #666;
+    font-size: 0.75rem;
+    font-family: Inter, sans-serif;
+  }
+  .topbar-right {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+  }
+  .btn-scan {
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    border: none;
+    background: #D4A017;
+    color: #000;
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: Inter, sans-serif;
+  }
+  .btn-auto {
+    padding: 0.4rem 1rem;
+    border-radius: 8px;
+    border: 1.5px solid #D4A017;
+    background: transparent;
+    color: #D4A017;
+    font-weight: 600;
+    font-size: 0.75rem;
+    cursor: pointer;
+    font-family: Inter, sans-serif;
+  }
+
+  /* Content area — grid */
+  .content-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    min-height: 0;
+  }
+
+  /* Left: Pipeline */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid #1a1a2e;
+    min-height: 0;
+  }
+
+  /* Stats strip */
+  .stats-strip {
+    display: flex;
+    gap: 0;
+    padding: 0;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .ss-item {
+    flex: 1;
+    padding: 0.65rem 0.75rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid #1a1a2e;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .ss-item:last-child { border-right: none; }
+  .ss-item:hover { background: #0f0f18; }
+  .ss-item.active { background: #0f0f18; box-shadow: inset 0 -2px 0 #D4A017; }
+  .ss-num { font-size: 1.1rem; font-weight: 700; color: #fff; }
+  .ss-num.gold { color: #D4A017; }
+  .ss-num.green { color: #4ade80; }
+  .ss-num.cyan { color: #22d3ee; }
+  .ss-label { font-size: 0.55rem; color: #444; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.1rem; }
+
+  /* Filter bar */
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .f-chip {
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    color: #555;
+    border: 1px solid #1a1a2e;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    font-family: Inter, sans-serif;
+  }
+  .f-chip:hover { border-color: #333; color: #888; }
+  .f-chip.active { background: #1a1a2e; color: #fff; border-color: #D4A017; }
+  .f-divider { width: 1px; height: 16px; background: #1a1a2e; margin: 0 0.25rem; }
+
+  /* Job table */
+  .job-table {
+    flex: 1;
+    overflow-y: auto;
+  }
+  .job-table::-webkit-scrollbar { width: 3px; }
+  .job-table::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+  .jt-header {
+    display: grid;
+    grid-template-columns: 2.5fr 1.2fr 0.6fr 0.7fr 0.8fr;
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid #1a1a2e;
+    position: sticky;
+    top: 0;
+    background: #0a0a0f;
+    z-index: 2;
+  }
+  .jt-th {
+    font-size: 0.55rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+
+  .jt-row {
+    display: grid;
+    grid-template-columns: 2.5fr 1.2fr 0.6fr 0.7fr 0.8fr;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid #0f0f18;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .jt-row:hover { background: #0f0f18; }
+  .jt-row.selected { background: #12121e; border-left: 3px solid #D4A017; padding-left: calc(1rem - 3px); }
+
+  .jt-title { font-size: 0.78rem; color: #e5e5e5; font-weight: 500; }
+  .jt-company { font-size: 0.7rem; color: #666; }
+  .jt-score {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .jt-score-bar {
+    width: 32px;
+    height: 4px;
+    border-radius: 2px;
+    background: #1a1a2e;
+    overflow: hidden;
+  }
+  .jt-score-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: #D4A017;
+  }
+  .jt-score-num { font-size: 0.65rem; color: #666; font-weight: 600; }
+
+  .jt-status {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-weight: 500;
+    display: inline-block;
+    width: fit-content;
+  }
+  .jt-status.applied { background: #052e16; color: #4ade80; }
+  .jt-status.new { background: #1a1a2e; color: #D4A017; }
+  .jt-status.interview { background: #083344; color: #22d3ee; }
+
+  .jt-method {
+    font-size: 0.6rem;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+    width: fit-content;
+  }
+  .jt-method.auto { background: #052e16; color: #4ade80; }
+  .jt-method.manual { background: #1a1a2e; color: #666; }
+  .jt-method-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+  }
+  .jt-method.auto .jt-method-dot { background: #4ade80; }
+  .jt-method.manual .jt-method-dot { background: #555; }
+
+  /* ── Right Panel: Context Sidebar ── */
+  .context-panel {
+    display: flex;
+    flex-direction: column;
+    background: #0c0c14;
+    overflow-y: auto;
+  }
+
+  .cp-section {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .cp-section:last-child { border-bottom: none; }
+  .cp-label {
+    font-size: 0.55rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    margin-bottom: 0.6rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .cp-label-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+  }
+
+  /* AI Insight card */
+  .insight-card {
+    background: #111118;
+    border: 1px solid #1a1a2e;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+  }
+  .insight-card:last-child { margin-bottom: 0; }
+  .insight-title {
+    font-size: 0.7rem;
+    color: #ccc;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+  .insight-body {
+    font-size: 0.68rem;
+    color: #777;
+    line-height: 1.5;
+  }
+
+  /* Quick Links */
+  .qlink {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+    margin-bottom: 0.2rem;
+  }
+  .qlink:hover { background: #111118; }
+  .qlink-icon {
+    width: 28px; height: 28px;
+    border-radius: 6px;
+    background: #1a1a2e;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem;
+  }
+  .qlink-text { font-size: 0.72rem; color: #aaa; }
+  .qlink-sub { font-size: 0.55rem; color: #444; }
+
+  /* Interview prep */
+  .prep-q {
+    background: #111118;
+    border: 1px solid #1a1a2e;
+    border-left: 3px solid #a78bfa;
+    border-radius: 0 8px 8px 0;
+    padding: 0.6rem 0.75rem;
+    margin-bottom: 0.4rem;
+  }
+  .prep-q:last-child { margin-bottom: 0; }
+  .prep-q-text {
+    font-size: 0.68rem;
+    color: #bbb;
+    line-height: 1.5;
+    font-style: italic;
+  }
+  .prep-q-tag {
+    font-size: 0.5rem;
+    color: #a78bfa;
+    margin-top: 0.3rem;
+    display: inline-block;
+  }
+
+  /* Activity mini */
+  .act-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0;
+  }
+  .act-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .act-dot.search { background: #D4A017; }
+  .act-dot.apply { background: #4ade80; }
+  .act-dot.error { background: #ef4444; }
+  .act-msg { font-size: 0.65rem; color: #666; flex: 1; }
+  .act-time { font-size: 0.55rem; color: #333; }
+
+  /* ── Annotations ── */
+  .annotations {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 1rem 3rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+  .anno {
+    background: #0c0c14;
+    border: 1px solid #1a1a2e;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .anno h3 {
+    font-size: 0.8rem;
+    color: #D4A017;
+    margin-bottom: 0.4rem;
+    font-weight: 600;
+  }
+  .anno p {
+    font-size: 0.72rem;
+    color: #777;
+    line-height: 1.6;
+  }
+  .anno ul {
+    list-style: none;
+    padding: 0;
+  }
+  .anno ul li {
+    font-size: 0.72rem;
+    color: #777;
+    line-height: 1.6;
+    padding-left: 0.8rem;
+    position: relative;
+  }
+  .anno ul li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: #D4A017;
+  }
+</style>
+</head>
+<body>
+
+<div class="proposal-header">
+  <h1>Job Search <span>Agent</span> — Redesign Proposal</h1>
+  <p>Modern SaaS layout with contextual intelligence panel</p>
+</div>
+
+<div class="mockup-container">
+  <div class="mockup-label">Full Layout Preview</div>
+
+  <div class="app-frame">
+    <div class="app-layout">
+
+      <!-- ═══ Sidebar ═══ -->
+      <div class="sidebar">
+        <div class="sb-logo">JQ</div>
+        <div class="sb-icon active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span class="sb-label">Pipeline</span>
+        </div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4z"/><path d="M4 12h16v4H4z"/><path d="M4 20h16"/></svg>
+          <span class="sb-label">Board</span>
+        </div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="sb-label">Resume</span>
+        </div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span class="sb-label">Interview Prep</span>
+          <div class="sb-badge"></div>
+        </div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span class="sb-label">Links & Portfolio</span>
+        </div>
+
+        <div class="sb-spacer"></div>
+
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2m-9-11h2m18 0h2m-3.64-6.36l-1.42 1.42M6.34 17.66l-1.42 1.42m0-14.14l1.42 1.42m11.32 11.32l1.42 1.42"/></svg>
+          <span class="sb-label">Settings</span>
+        </div>
+        <div class="sb-avatar">SG</div>
+      </div>
+
+      <!-- ═══ Main Content ═══ -->
+      <div class="main">
+        <!-- Top bar -->
+        <div class="topbar">
+          <div class="topbar-left">
+            <span class="topbar-title">Pipeline</span>
+            <span class="topbar-count">44 jobs</span>
+          </div>
+          <input class="topbar-search" placeholder="Search jobs, companies..." readonly>
+          <div class="topbar-right">
+            <button class="btn-auto">Auto-Apply</button>
+            <button class="btn-scan">Scan Jobs</button>
+          </div>
+        </div>
+
+        <div class="content-grid">
+          <!-- ── Left: Pipeline ── -->
+          <div class="pipeline">
+            <!-- Stats -->
+            <div class="stats-strip">
+              <div class="ss-item active">
+                <span class="ss-num">44</span>
+                <span class="ss-label">Total</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num gold">0</span>
+                <span class="ss-label">Tier A</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num">2</span>
+                <span class="ss-label">Tier B</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num">42</span>
+                <span class="ss-label">Tier C</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num green">44</span>
+                <span class="ss-label">Applied</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num cyan">0</span>
+                <span class="ss-label">Interviews</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num gold">0</span>
+                <span class="ss-label">Offers</span>
+              </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filter-bar">
+              <button class="f-chip active">All</button>
+              <button class="f-chip">LinkedIn</button>
+              <button class="f-chip">Greenhouse</button>
+              <button class="f-chip">Lever</button>
+              <div class="f-divider"></div>
+              <button class="f-chip">New</button>
+              <button class="f-chip">Saved</button>
+              <button class="f-chip">Applied</button>
+            </div>
+
+            <!-- Job Table -->
+            <div class="job-table">
+              <div class="jt-header">
+                <span class="jt-th">Position</span>
+                <span class="jt-th">Company</span>
+                <span class="jt-th">Score</span>
+                <span class="jt-th">Status</span>
+                <span class="jt-th">Apply</span>
+              </div>
+
+              <div class="jt-row selected">
+                <span class="jt-title">Director, Product Marketing (Messaging & Email)</span>
+                <span class="jt-company">Twilio</span>
+                <div class="jt-score">
+                  <div class="jt-score-bar"><div class="jt-score-fill" style="width:57%"></div></div>
+                  <span class="jt-score-num">57</span>
+                </div>
+                <span class="jt-status applied">Applied</span>
+                <span class="jt-method auto"><span class="jt-method-dot"></span> Auto</span>
+              </div>
+
+              <div class="jt-row">
+                <span class="jt-title">Sr. Director, Strategic Partnerships & Entertainment</span>
+                <span class="jt-company">Chime</span>
+                <div class="jt-score">
+                  <div class="jt-score-bar"><div class="jt-score-fill" style="width:49%"></div></div>
+                  <span class="jt-score-num">49</span>
+                </div>
+                <span class="jt-status applied">Applied</span>
+                <span class="jt-method auto"><span class="jt-method-dot"></span> Auto</span>
+              </div>
+
+              <div class="jt-row">
+                <span class="jt-title">VP of Marketing, Growth</span>
+                <span class="jt-company">Figma</span>
+                <div class="jt-score">
+                  <div class="jt-score-bar"><div class="jt-score-fill" style="width:82%"></div></div>
+                  <span class="jt-score-num">82</span>
+                </div>
+                <span class="jt-status new">New</span>
+                <span class="jt-method auto"><span class="jt-method-dot"></span> Auto</span>
+              </div>
+
+              <div class="jt-row">
+                <span class="jt-title">Head of Product Marketing</span>
+                <span class="jt-company">Notion</span>
+                <div class="jt-score">
+                  <div class="jt-score-bar"><div class="jt-score-fill" style="width:74%"></div></div>
+                  <span class="jt-score-num">74</span>
+                </div>
+                <span class="jt-status new">New</span>
+                <span class="jt-method manual"><span class="jt-method-dot"></span> Manual</span>
+              </div>
+
+              <div class="jt-row">
+                <span class="jt-title">Senior Director, Brand & Communications</span>
+                <span class="jt-company">Stripe</span>
+                <div class="jt-score">
+                  <div class="jt-score-bar"><div class="jt-score-fill" style="width:68%"></div></div>
+                  <span class="jt-score-num">68</span>
+                </div>
+                <span class="jt-status interview">Interview</span>
+                <span class="jt-method auto"><span class="jt-method-dot"></span> Auto</span>
+              </div>
+
+              <div class="jt-row">
+                <span class="jt-title">Director of Digital Marketing</span>
+                <span class="jt-company">Shopify</span>
+                <div class="jt-score">
+                  <div class="jt-score-bar"><div class="jt-score-fill" style="width:61%"></div></div>
+                  <span class="jt-score-num">61</span>
+                </div>
+                <span class="jt-status applied">Applied</span>
+                <span class="jt-method auto"><span class="jt-method-dot"></span> Auto</span>
+              </div>
+
+              <div class="jt-row">
+                <span class="jt-title">VP Marketing & Revenue Operations</span>
+                <span class="jt-company">HubSpot</span>
+                <div class="jt-score">
+                  <div class="jt-score-bar"><div class="jt-score-fill" style="width:55%"></div></div>
+                  <span class="jt-score-num">55</span>
+                </div>
+                <span class="jt-status new">New</span>
+                <span class="jt-method manual"><span class="jt-method-dot"></span> Manual</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Right: Context Panel ═══ -->
+          <div class="context-panel">
+
+            <!-- AI Insights -->
+            <div class="cp-section">
+              <div class="cp-label">
+                <span class="cp-label-dot" style="background:#D4A017;"></span>
+                AI Insights
+              </div>
+              <div class="insight-card">
+                <div class="insight-title">
+                  <span style="color:#D4A017;">💡</span> Today's Tip
+                </div>
+                <div class="insight-body">You've applied to 44 roles — strong velocity. Consider pausing auto-apply on Tier C and focusing follow-ups on your 5 most recent Tier B applications.</div>
+              </div>
+              <div class="insight-card">
+                <div class="insight-title">
+                  <span style="color:#4ade80;">📊</span> Pattern Detected
+                </div>
+                <div class="insight-body">Roles with "Director" + "Product Marketing" score 15% higher on average. Lean into this keyword in your next scan.</div>
+              </div>
+            </div>
+
+            <!-- Interview Prep -->
+            <div class="cp-section">
+              <div class="cp-label">
+                <span class="cp-label-dot" style="background:#a78bfa;"></span>
+                Interview Prep
+              </div>
+              <div class="prep-q">
+                <div class="prep-q-text">"Describe a time you launched a product in a competitive market. What was your GTM strategy?"</div>
+                <span class="prep-q-tag">Behavioral — GTM</span>
+              </div>
+              <div class="prep-q">
+                <div class="prep-q-text">"How do you measure the ROI of a brand campaign vs. performance marketing?"</div>
+                <span class="prep-q-tag">Strategic — Measurement</span>
+              </div>
+            </div>
+
+            <!-- Quick Links -->
+            <div class="cp-section">
+              <div class="cp-label">
+                <span class="cp-label-dot" style="background:#f97316;"></span>
+                Quick Access
+              </div>
+              <div class="qlink">
+                <div class="qlink-icon">📄</div>
+                <div>
+                  <div class="qlink-text">Resume</div>
+                  <div class="qlink-sub">Sonny_Gonzalez_VP_Marketing.pdf</div>
+                </div>
+              </div>
+              <div class="qlink">
+                <div class="qlink-icon">🌐</div>
+                <div>
+                  <div class="qlink-text">Portfolio</div>
+                  <div class="qlink-sub">aiforroi.co</div>
+                </div>
+              </div>
+              <div class="qlink">
+                <div class="qlink-icon">💼</div>
+                <div>
+                  <div class="qlink-text">LinkedIn</div>
+                  <div class="qlink-sub">linkedin.com/in/sonnygonzalez</div>
+                </div>
+              </div>
+              <div class="qlink">
+                <div class="qlink-icon">🐙</div>
+                <div>
+                  <div class="qlink-text">GitHub</div>
+                  <div class="qlink-sub">github.com/sgonz24</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Activity -->
+            <div class="cp-section">
+              <div class="cp-label">
+                <span class="cp-label-dot" style="background:#22d3ee;"></span>
+                Recent Activity
+              </div>
+              <div class="act-item">
+                <span class="act-dot apply"></span>
+                <span class="act-msg">Applied to Twilio — Director PM</span>
+                <span class="act-time">2m ago</span>
+              </div>
+              <div class="act-item">
+                <span class="act-dot apply"></span>
+                <span class="act-msg">Applied to Chime — Sr. Director</span>
+                <span class="act-time">5m ago</span>
+              </div>
+              <div class="act-item">
+                <span class="act-dot search"></span>
+                <span class="act-msg">Scan complete — 6 new jobs found</span>
+                <span class="act-time">12m ago</span>
+              </div>
+              <div class="act-item">
+                <span class="act-dot error"></span>
+                <span class="act-msg">Auto-apply failed — Greenhouse timeout</span>
+                <span class="act-time">15m ago</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Annotations -->
+<div class="annotations">
+  <div class="anno">
+    <h3>Icon Sidebar</h3>
+    <ul>
+      <li>Pipeline, Board, Resume, Interview Prep, Links & Portfolio</li>
+      <li>Collapses to icons — full width goes to content</li>
+      <li>Board view preserved as its own section (your existing Kanban)</li>
+    </ul>
+  </div>
+  <div class="anno">
+    <h3>Full-Width Pipeline Table</h3>
+    <ul>
+      <li>Default view — scannable rows, not cramped cards</li>
+      <li>Clickable stats row doubles as quick filters</li>
+      <li>Score bars give instant visual ranking</li>
+      <li>Click a row → detail drawer slides in (existing behavior)</li>
+    </ul>
+  </div>
+  <div class="anno">
+    <h3>Context Intelligence Panel</h3>
+    <ul>
+      <li>AI tips that adapt to your pipeline state</li>
+      <li>Interview questions rotated daily or per-company</li>
+      <li>Quick links to resume, portfolio, LinkedIn, GitHub</li>
+      <li>Activity feed lives here — out of the way but visible</li>
+    </ul>
+  </div>
+  <div class="anno">
+    <h3>New Sections (via sidebar)</h3>
+    <ul>
+      <li><strong>Resume</strong> — upload, preview, track which version sent where</li>
+      <li><strong>Interview Prep</strong> — full page of questions by company/category</li>
+      <li><strong>Links & Portfolio</strong> — manage all your web presence links</li>
+      <li>Each section is its own "page" — no clutter</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>

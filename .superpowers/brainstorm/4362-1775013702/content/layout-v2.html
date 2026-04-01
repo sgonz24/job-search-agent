@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobHQ — Layout v2 with Trending Feed</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: #09090b; color: #e5e5e5; overflow-x: hidden; }
+
+  .proposal-header {
+    text-align: center;
+    padding: 2rem 1rem 1rem;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .proposal-header h1 { font-size: 1.4rem; color: #fff; font-weight: 700; }
+  .proposal-header h1 span { color: #D4A017; }
+  .proposal-header p { color: #555; font-size: 0.8rem; margin-top: 0.3rem; }
+
+  .mockup-container {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+  }
+  .mockup-label {
+    font-size: 0.65rem;
+    color: #D4A017;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+  }
+
+  /* ═══ The App Frame ═══ */
+  .app-frame {
+    background: #0a0a0f;
+    border: 1px solid #1a1a2e;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.5);
+  }
+  .app-layout {
+    display: flex;
+    min-height: 580px;
+  }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 64px;
+    background: #0c0c14;
+    border-right: 1px solid #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem 0;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+  .sb-logo {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #D4A017, #F0C040);
+    margin-bottom: 1.25rem;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 0.7rem; color: #000;
+  }
+  .sb-icon {
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    color: #444;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .sb-icon:hover { background: #1a1a2e; color: #888; }
+  .sb-icon.active { background: #1a1a2e; color: #D4A017; }
+  .sb-icon .sb-label {
+    display: none;
+    position: absolute;
+    left: 48px;
+    background: #222;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    white-space: nowrap;
+    z-index: 10;
+  }
+  .sb-icon:hover .sb-label { display: block; }
+  .sb-badge {
+    position: absolute;
+    top: 4px; right: 4px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+    border: 2px solid #0c0c14;
+  }
+  .sb-spacer { flex: 1; }
+  .sb-avatar {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #333, #555);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.55rem; color: #aaa; font-weight: 600;
+  }
+
+  /* ── Main Content ── */
+  .main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid #1a1a2e;
+    gap: 1rem;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 0.75rem; }
+  .topbar-title { font-size: 0.9rem; font-weight: 600; color: #fff; }
+  .topbar-count { font-size: 0.65rem; color: #555; background: #1a1a2e; padding: 0.15rem 0.5rem; border-radius: 10px; }
+  .topbar-search {
+    flex: 1; max-width: 280px;
+    padding: 0.4rem 0.75rem; border-radius: 8px;
+    border: 1px solid #1a1a2e; background: #0c0c14;
+    color: #666; font-size: 0.75rem; font-family: Inter, sans-serif;
+  }
+  .topbar-right { display: flex; gap: 0.5rem; align-items: center; }
+  .btn-scan {
+    padding: 0.4rem 1rem; border-radius: 8px; border: none;
+    background: #D4A017; color: #000; font-weight: 600; font-size: 0.75rem;
+    cursor: pointer; font-family: Inter, sans-serif;
+  }
+  .btn-auto {
+    padding: 0.4rem 1rem; border-radius: 8px;
+    border: 1.5px solid #D4A017; background: transparent;
+    color: #D4A017; font-weight: 600; font-size: 0.75rem;
+    cursor: pointer; font-family: Inter, sans-serif;
+  }
+
+  /* ═══ 3-Panel Content Grid ═══ */
+  .content-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr 300px;
+    min-height: 0;
+  }
+
+  /* ── LEFT: Trending Feed ── */
+  .trending-panel {
+    background: #0c0c14;
+    border-right: 1px solid #1a1a2e;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .trending-panel::-webkit-scrollbar { width: 3px; }
+  .trending-panel::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+  .tp-header {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #1a1a2e;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    background: #0c0c14;
+    z-index: 2;
+  }
+  .tp-title {
+    font-size: 0.65rem;
+    color: #444;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .tp-live {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: livePulse 2s infinite;
+  }
+  @keyframes livePulse { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+  .tp-tabs {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .tp-tab {
+    flex: 1;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.6rem;
+    color: #444;
+    text-align: center;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    font-family: Inter, sans-serif;
+    background: none;
+    border-top: none;
+    border-left: none;
+    border-right: none;
+  }
+  .tp-tab:hover { color: #888; }
+  .tp-tab.active { color: #1d9bf0; border-bottom-color: #1d9bf0; }
+
+  .tp-feed { padding: 0.5rem; }
+
+  /* Tweet card */
+  .tweet {
+    background: #111118;
+    border: 1px solid #1a1a2e;
+    border-radius: 10px;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tweet:hover { border-color: #252540; background: #14141e; }
+  .tweet-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.4rem;
+  }
+  .tweet-avatar {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .tweet-name { font-size: 0.68rem; color: #ddd; font-weight: 600; }
+  .tweet-handle { font-size: 0.6rem; color: #444; }
+  .tweet-time { font-size: 0.55rem; color: #333; margin-left: auto; }
+  .tweet-body {
+    font-size: 0.7rem;
+    color: #999;
+    line-height: 1.55;
+    margin-bottom: 0.4rem;
+  }
+  .tweet-body strong { color: #ccc; }
+  .tweet-engagement {
+    display: flex;
+    gap: 1rem;
+    font-size: 0.55rem;
+    color: #333;
+  }
+  .tweet-engagement span { display: flex; align-items: center; gap: 0.2rem; }
+  .tweet-tag {
+    display: inline-block;
+    font-size: 0.55rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    margin-right: 0.2rem;
+    margin-bottom: 0.3rem;
+  }
+  .tweet-tag.ai { background: rgba(168,139,250,0.15); color: #a78bfa; }
+  .tweet-tag.claude { background: rgba(212,160,23,0.15); color: #D4A017; }
+  .tweet-tag.career { background: rgba(34,211,238,0.15); color: #22d3ee; }
+  .tweet-tag.tech { background: rgba(74,222,128,0.15); color: #4ade80; }
+
+  /* News card */
+  .news-item {
+    background: #111118;
+    border: 1px solid #1a1a2e;
+    border-radius: 10px;
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .news-item:hover { border-color: #252540; }
+  .news-source {
+    font-size: 0.55rem;
+    color: #f97316;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+  }
+  .news-title {
+    font-size: 0.7rem;
+    color: #ccc;
+    font-weight: 500;
+    line-height: 1.4;
+    margin-bottom: 0.25rem;
+  }
+  .news-meta {
+    font-size: 0.55rem;
+    color: #333;
+  }
+
+  /* ── CENTER: Pipeline ── */
+  .pipeline {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .stats-strip {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .ss-item {
+    flex: 1;
+    padding: 0.65rem 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid #1a1a2e;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .ss-item:last-child { border-right: none; }
+  .ss-item:hover { background: #0f0f18; }
+  .ss-item.active { background: #0f0f18; box-shadow: inset 0 -2px 0 #D4A017; }
+  .ss-num { font-size: 1.1rem; font-weight: 700; color: #fff; }
+  .ss-num.gold { color: #D4A017; }
+  .ss-num.green { color: #4ade80; }
+  .ss-num.cyan { color: #22d3ee; }
+  .ss-label { font-size: 0.55rem; color: #444; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 0.1rem; }
+
+  .filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #1a1a2e;
+    flex-wrap: wrap;
+  }
+  .f-chip {
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    color: #555;
+    border: 1px solid #1a1a2e;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: transparent;
+    font-family: Inter, sans-serif;
+  }
+  .f-chip:hover { border-color: #333; color: #888; }
+  .f-chip.active { background: #1a1a2e; color: #fff; border-color: #D4A017; }
+  .f-divider { width: 1px; height: 16px; background: #1a1a2e; margin: 0 0.15rem; }
+
+  /* Job table */
+  .job-table { flex: 1; overflow-y: auto; }
+  .job-table::-webkit-scrollbar { width: 3px; }
+  .job-table::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+  .jt-header {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr 0.6fr 0.7fr;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #1a1a2e;
+    position: sticky; top: 0;
+    background: #0a0a0f; z-index: 2;
+  }
+  .jt-th { font-size: 0.55rem; color: #444; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; }
+
+  .jt-row {
+    display: grid;
+    grid-template-columns: 2.5fr 1fr 0.6fr 0.7fr;
+    padding: 0.55rem 0.75rem;
+    border-bottom: 1px solid #0f0f18;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  .jt-row:hover { background: #0f0f18; }
+  .jt-row.selected { background: #12121e; border-left: 3px solid #D4A017; padding-left: calc(0.75rem - 3px); }
+
+  .jt-title { font-size: 0.75rem; color: #e5e5e5; font-weight: 500; }
+  .jt-subtitle { font-size: 0.6rem; color: #444; margin-top: 0.1rem; }
+  .jt-company { font-size: 0.68rem; color: #666; }
+  .jt-score { display: flex; align-items: center; gap: 0.3rem; }
+  .jt-score-bar { width: 28px; height: 4px; border-radius: 2px; background: #1a1a2e; overflow: hidden; }
+  .jt-score-fill { height: 100%; border-radius: 2px; background: #D4A017; }
+  .jt-score-num { font-size: 0.65rem; color: #666; font-weight: 600; }
+
+  .jt-status { font-size: 0.58rem; padding: 0.15rem 0.45rem; border-radius: 4px; font-weight: 500; display: inline-flex; align-items: center; gap: 0.25rem; width: fit-content; }
+  .jt-status.applied { background: #052e16; color: #4ade80; }
+  .jt-status.new { background: #1a1a2e; color: #D4A017; }
+  .jt-status.interview { background: #083344; color: #22d3ee; }
+  .jt-status-dot { width: 5px; height: 5px; border-radius: 50%; }
+  .jt-status.applied .jt-status-dot { background: #4ade80; }
+  .jt-status.new .jt-status-dot { background: #D4A017; }
+  .jt-status.interview .jt-status-dot { background: #22d3ee; }
+
+  /* ── RIGHT: Context Panel ── */
+  .context-panel {
+    display: flex;
+    flex-direction: column;
+    background: #0c0c14;
+    border-left: 1px solid #1a1a2e;
+    overflow-y: auto;
+  }
+  .context-panel::-webkit-scrollbar { width: 3px; }
+  .context-panel::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+  .cp-section {
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid #1a1a2e;
+  }
+  .cp-section:last-child { border-bottom: none; }
+  .cp-label {
+    font-size: 0.55rem; color: #444;
+    text-transform: uppercase; letter-spacing: 1px;
+    font-weight: 600; margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .cp-label-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+  .insight-card {
+    background: #111118; border: 1px solid #1a1a2e;
+    border-radius: 8px; padding: 0.65rem; margin-bottom: 0.4rem;
+  }
+  .insight-card:last-child { margin-bottom: 0; }
+  .insight-title { font-size: 0.68rem; color: #ccc; font-weight: 600; margin-bottom: 0.2rem; display: flex; align-items: center; gap: 0.3rem; }
+  .insight-body { font-size: 0.65rem; color: #666; line-height: 1.5; }
+
+  .prep-q {
+    background: #111118; border: 1px solid #1a1a2e;
+    border-left: 3px solid #a78bfa;
+    border-radius: 0 8px 8px 0;
+    padding: 0.55rem 0.65rem; margin-bottom: 0.35rem;
+  }
+  .prep-q:last-child { margin-bottom: 0; }
+  .prep-q-text { font-size: 0.65rem; color: #bbb; line-height: 1.5; font-style: italic; }
+  .prep-q-tag { font-size: 0.5rem; color: #a78bfa; margin-top: 0.2rem; display: inline-block; }
+
+  .qlink {
+    display: flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.5rem; border-radius: 6px;
+    cursor: pointer; transition: background 0.15s; margin-bottom: 0.15rem;
+  }
+  .qlink:hover { background: #111118; }
+  .qlink-icon {
+    width: 26px; height: 26px; border-radius: 6px;
+    background: #1a1a2e; display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem;
+  }
+  .qlink-text { font-size: 0.7rem; color: #aaa; }
+  .qlink-sub { font-size: 0.52rem; color: #444; }
+
+  .act-item { display: flex; align-items: center; gap: 0.4rem; padding: 0.3rem 0; }
+  .act-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+  .act-dot.search { background: #D4A017; }
+  .act-dot.apply { background: #4ade80; }
+  .act-dot.error { background: #ef4444; }
+  .act-msg { font-size: 0.62rem; color: #555; flex: 1; }
+  .act-time { font-size: 0.52rem; color: #333; }
+
+  /* ── Annotations ── */
+  .annotations {
+    max-width: 1400px;
+    margin: 2rem auto;
+    padding: 0 1rem 3rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 1rem;
+  }
+  .anno {
+    background: #0c0c14;
+    border: 1px solid #1a1a2e;
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+  }
+  .anno h3 { font-size: 0.8rem; color: #D4A017; margin-bottom: 0.4rem; font-weight: 600; }
+  .anno p { font-size: 0.72rem; color: #777; line-height: 1.6; }
+  .anno ul { list-style: none; padding: 0; }
+  .anno ul li {
+    font-size: 0.72rem; color: #777; line-height: 1.6;
+    padding-left: 0.8rem; position: relative;
+  }
+  .anno ul li::before { content: '→'; position: absolute; left: 0; color: #D4A017; }
+
+  .new-badge {
+    display: inline-block;
+    font-size: 0.5rem;
+    padding: 0.1rem 0.35rem;
+    border-radius: 4px;
+    background: rgba(74,222,128,0.15);
+    color: #4ade80;
+    font-weight: 600;
+    margin-left: 0.3rem;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<div class="proposal-header">
+  <h1>Job Search <span>Agent</span> — v2 with Trending Feed</h1>
+  <p>3-panel layout: Trending Feed | Pipeline | Intelligence</p>
+</div>
+
+<div class="mockup-container">
+  <div class="mockup-label">Full Layout Preview</div>
+
+  <div class="app-frame">
+    <div class="app-layout">
+
+      <!-- ═══ Sidebar ═══ -->
+      <div class="sidebar">
+        <div class="sb-logo">JQ</div>
+        <div class="sb-icon active">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          <span class="sb-label">Pipeline</span>
+        </div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16v4H4z"/><path d="M4 12h16v4H4z"/><path d="M4 20h16"/></svg>
+          <span class="sb-label">Board</span>
+        </div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>
+          <span class="sb-label">Resume</span>
+        </div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          <span class="sb-label">Interview Prep</span>
+          <div class="sb-badge"></div>
+        </div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span class="sb-label">Links & Portfolio</span>
+        </div>
+        <div class="sb-spacer"></div>
+        <div class="sb-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2m0 18v2m-9-11h2m18 0h2m-3.64-6.36l-1.42 1.42M6.34 17.66l-1.42 1.42m0-14.14l1.42 1.42m11.32 11.32l1.42 1.42"/></svg>
+          <span class="sb-label">Settings</span>
+        </div>
+        <div class="sb-avatar">SG</div>
+      </div>
+
+      <!-- ═══ Main ═══ -->
+      <div class="main">
+        <!-- Top bar -->
+        <div class="topbar">
+          <div class="topbar-left">
+            <span class="topbar-title">Pipeline</span>
+            <span class="topbar-count">44 jobs</span>
+          </div>
+          <input class="topbar-search" placeholder="⌘K  Search jobs, companies..." readonly>
+          <div class="topbar-right">
+            <button class="btn-auto">Auto-Apply</button>
+            <button class="btn-scan">Scan Jobs</button>
+          </div>
+        </div>
+
+        <div class="content-grid">
+
+          <!-- ═══ LEFT: Trending Feed ═══ -->
+          <div class="trending-panel">
+            <div class="tp-header">
+              <div class="tp-title">
+                <div class="tp-live"></div>
+                Trending
+              </div>
+            </div>
+            <div class="tp-tabs">
+              <button class="tp-tab active">𝕏 / AI</button>
+              <button class="tp-tab">News</button>
+              <button class="tp-tab">HN</button>
+            </div>
+
+            <div class="tp-feed">
+              <!-- Tweet 1 -->
+              <div class="tweet">
+                <div class="tweet-header">
+                  <div class="tweet-avatar" style="background:linear-gradient(135deg,#1d9bf0,#0a66c2);"></div>
+                  <div>
+                    <div class="tweet-name">Anthropic</div>
+                    <div class="tweet-handle">@AnthropicAI</div>
+                  </div>
+                  <span class="tweet-time">2h</span>
+                </div>
+                <div class="tweet-body">
+                  <strong>Claude Code</strong> now supports autonomous multi-file editing with tool use. The future of AI-assisted development is here.
+                </div>
+                <div>
+                  <span class="tweet-tag ai">AI</span>
+                  <span class="tweet-tag claude">Claude</span>
+                </div>
+                <div class="tweet-engagement">
+                  <span>💬 342</span>
+                  <span>🔄 1.2K</span>
+                  <span>❤️ 4.8K</span>
+                </div>
+              </div>
+
+              <!-- Tweet 2 -->
+              <div class="tweet">
+                <div class="tweet-header">
+                  <div class="tweet-avatar" style="background:linear-gradient(135deg,#333,#666);"></div>
+                  <div>
+                    <div class="tweet-name">Lenny Rachitsky</div>
+                    <div class="tweet-handle">@lennysan</div>
+                  </div>
+                  <span class="tweet-time">5h</span>
+                </div>
+                <div class="tweet-body">
+                  The best <strong>VP of Marketing</strong> hires I've seen all had one thing in common: they could tie every campaign back to revenue within 48 hours.
+                </div>
+                <div>
+                  <span class="tweet-tag career">Career</span>
+                </div>
+                <div class="tweet-engagement">
+                  <span>💬 89</span>
+                  <span>🔄 410</span>
+                  <span>❤️ 2.1K</span>
+                </div>
+              </div>
+
+              <!-- News item -->
+              <div class="news-item">
+                <div class="news-source">TechCrunch</div>
+                <div class="news-title">AI-powered job platforms see 300% surge in VP-level placements</div>
+                <div class="news-meta">45 min ago · 3 min read</div>
+              </div>
+
+              <!-- Tweet 3 -->
+              <div class="tweet">
+                <div class="tweet-header">
+                  <div class="tweet-avatar" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);"></div>
+                  <div>
+                    <div class="tweet-name">Devin AI</div>
+                    <div class="tweet-handle">@cognaboratory</div>
+                  </div>
+                  <span class="tweet-time">8h</span>
+                </div>
+                <div class="tweet-body">
+                  Marketing teams using <strong>AI agents</strong> for competitive analysis are shipping campaigns 3x faster. The playbook is changing.
+                </div>
+                <div>
+                  <span class="tweet-tag ai">AI</span>
+                  <span class="tweet-tag tech">MarTech</span>
+                </div>
+                <div class="tweet-engagement">
+                  <span>💬 56</span>
+                  <span>🔄 203</span>
+                  <span>❤️ 890</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ CENTER: Pipeline ═══ -->
+          <div class="pipeline">
+            <div class="stats-strip">
+              <div class="ss-item active">
+                <span class="ss-num">44</span>
+                <span class="ss-label">Total</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num gold">0</span>
+                <span class="ss-label">Tier A</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num">2</span>
+                <span class="ss-label">Tier B</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num">42</span>
+                <span class="ss-label">Tier C</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num green">44</span>
+                <span class="ss-label">Applied</span>
+              </div>
+              <div class="ss-item">
+                <span class="ss-num cyan">0</span>
+                <span class="ss-label">Interviews</span>
+              </div>
+            </div>
+
+            <div class="filter-bar">
+              <button class="f-chip active">All</button>
+              <button class="f-chip">LinkedIn</button>
+              <button class="f-chip">Greenhouse</button>
+              <button class="f-chip">Lever</button>
+              <div class="f-divider"></div>
+              <button class="f-chip">New</button>
+              <button class="f-chip">Applied</button>
+            </div>
+
+            <div class="job-table">
+              <div class="jt-header">
+                <span class="jt-th">Position</span>
+                <span class="jt-th">Company</span>
+                <span class="jt-th">Score</span>
+                <span class="jt-th">Status</span>
+              </div>
+              <div class="jt-row selected">
+                <div><div class="jt-title">Director, Product Marketing</div><div class="jt-subtitle">Messaging & Email · Remote</div></div>
+                <span class="jt-company">Twilio</span>
+                <div class="jt-score"><div class="jt-score-bar"><div class="jt-score-fill" style="width:57%"></div></div><span class="jt-score-num">57</span></div>
+                <span class="jt-status applied"><span class="jt-status-dot"></span> Applied</span>
+              </div>
+              <div class="jt-row">
+                <div><div class="jt-title">Sr. Director, Strategic Partnerships</div><div class="jt-subtitle">Branded Entertainment · Remote, USA</div></div>
+                <span class="jt-company">Chime</span>
+                <div class="jt-score"><div class="jt-score-bar"><div class="jt-score-fill" style="width:49%"></div></div><span class="jt-score-num">49</span></div>
+                <span class="jt-status applied"><span class="jt-status-dot"></span> Applied</span>
+              </div>
+              <div class="jt-row">
+                <div><div class="jt-title">VP of Marketing, Growth</div><div class="jt-subtitle">B2B SaaS · Remote</div></div>
+                <span class="jt-company">Figma</span>
+                <div class="jt-score"><div class="jt-score-bar"><div class="jt-score-fill" style="width:82%"></div></div><span class="jt-score-num">82</span></div>
+                <span class="jt-status new"><span class="jt-status-dot"></span> New</span>
+              </div>
+              <div class="jt-row">
+                <div><div class="jt-title">Head of Product Marketing</div><div class="jt-subtitle">Enterprise · SF / Remote</div></div>
+                <span class="jt-company">Notion</span>
+                <div class="jt-score"><div class="jt-score-bar"><div class="jt-score-fill" style="width:74%"></div></div><span class="jt-score-num">74</span></div>
+                <span class="jt-status new"><span class="jt-status-dot"></span> New</span>
+              </div>
+              <div class="jt-row">
+                <div><div class="jt-title">Senior Director, Brand & Comms</div><div class="jt-subtitle">Global · Remote</div></div>
+                <span class="jt-company">Stripe</span>
+                <div class="jt-score"><div class="jt-score-bar"><div class="jt-score-fill" style="width:68%"></div></div><span class="jt-score-num">68</span></div>
+                <span class="jt-status interview"><span class="jt-status-dot"></span> Interview</span>
+              </div>
+              <div class="jt-row">
+                <div><div class="jt-title">Director of Digital Marketing</div><div class="jt-subtitle">E-commerce · Remote</div></div>
+                <span class="jt-company">Shopify</span>
+                <div class="jt-score"><div class="jt-score-bar"><div class="jt-score-fill" style="width:61%"></div></div><span class="jt-score-num">61</span></div>
+                <span class="jt-status applied"><span class="jt-status-dot"></span> Applied</span>
+              </div>
+              <div class="jt-row">
+                <div><div class="jt-title">VP Marketing & Revenue Ops</div><div class="jt-subtitle">Mid-Market · Remote</div></div>
+                <span class="jt-company">HubSpot</span>
+                <div class="jt-score"><div class="jt-score-bar"><div class="jt-score-fill" style="width:55%"></div></div><span class="jt-score-num">55</span></div>
+                <span class="jt-status new"><span class="jt-status-dot"></span> New</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ RIGHT: Context Panel ═══ -->
+          <div class="context-panel">
+            <div class="cp-section">
+              <div class="cp-label"><span class="cp-label-dot" style="background:#D4A017;"></span> AI Insights</div>
+              <div class="insight-card">
+                <div class="insight-title"><span style="color:#D4A017;">💡</span> Today's Tip</div>
+                <div class="insight-body">You've applied to 44 roles — strong velocity. Consider pausing Tier C auto-apply and focusing follow-ups on your 5 most recent Tier B apps.</div>
+              </div>
+              <div class="insight-card">
+                <div class="insight-title"><span style="color:#4ade80;">📊</span> Pattern</div>
+                <div class="insight-body">"Director" + "Product Marketing" roles score 15% higher. Lean into this in your next scan config.</div>
+              </div>
+            </div>
+
+            <div class="cp-section">
+              <div class="cp-label"><span class="cp-label-dot" style="background:#a78bfa;"></span> Interview Prep</div>
+              <div class="prep-q">
+                <div class="prep-q-text">"Describe a time you launched a product in a competitive market."</div>
+                <span class="prep-q-tag">Behavioral — GTM</span>
+              </div>
+              <div class="prep-q">
+                <div class="prep-q-text">"How do you measure brand campaign ROI vs. performance?"</div>
+                <span class="prep-q-tag">Strategic — Measurement</span>
+              </div>
+            </div>
+
+            <div class="cp-section">
+              <div class="cp-label"><span class="cp-label-dot" style="background:#f97316;"></span> Quick Access</div>
+              <div class="qlink">
+                <div class="qlink-icon">📄</div>
+                <div><div class="qlink-text">Resume</div><div class="qlink-sub">VP_Marketing.pdf</div></div>
+              </div>
+              <div class="qlink">
+                <div class="qlink-icon">🌐</div>
+                <div><div class="qlink-text">Portfolio</div><div class="qlink-sub">aiforroi.co</div></div>
+              </div>
+              <div class="qlink">
+                <div class="qlink-icon">💼</div>
+                <div><div class="qlink-text">LinkedIn</div><div class="qlink-sub">in/sonnygonzalez</div></div>
+              </div>
+            </div>
+
+            <div class="cp-section">
+              <div class="cp-label"><span class="cp-label-dot" style="background:#22d3ee;"></span> Activity</div>
+              <div class="act-item"><span class="act-dot apply"></span><span class="act-msg">Applied to Twilio</span><span class="act-time">2m</span></div>
+              <div class="act-item"><span class="act-dot apply"></span><span class="act-msg">Applied to Chime</span><span class="act-time">5m</span></div>
+              <div class="act-item"><span class="act-dot search"></span><span class="act-msg">Scan: 6 new jobs</span><span class="act-time">12m</span></div>
+              <div class="act-item"><span class="act-dot error"></span><span class="act-msg">Greenhouse timeout</span><span class="act-time">15m</span></div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Annotations -->
+<div class="annotations">
+  <div class="anno">
+    <h3>Trending Feed <span class="new-badge">NEW</span></h3>
+    <ul>
+      <li>Live X/Twitter posts filtered for AI, Claude Code, marketing leadership</li>
+      <li>Tabs: 𝕏/AI, News, HackerNews</li>
+      <li>Great interview talking points — stay current</li>
+      <li>Collapsible when you need more pipeline space</li>
+    </ul>
+  </div>
+  <div class="anno">
+    <h3>Pipeline (Center)</h3>
+    <ul>
+      <li>Full-width table with 2-line rows (title + subtitle)</li>
+      <li>Clickable stats row as quick filters</li>
+      <li>Score bars for instant visual ranking</li>
+      <li>Click row → detail drawer slides over</li>
+    </ul>
+  </div>
+  <div class="anno">
+    <h3>Intelligence Panel (Right)</h3>
+    <ul>
+      <li>AI tips reactive to your pipeline data</li>
+      <li>Interview questions by company/category</li>
+      <li>Quick access: resume, portfolio, LinkedIn, GitHub</li>
+      <li>Activity feed — compact, always visible</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>

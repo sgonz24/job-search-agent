@@ -76,12 +76,12 @@ export default function JobDrawer({ job, onClose, onUpdateStatus, onApply }) {
         </div>
 
         <div className="drawer-actions">
-          {job.url && <a href={job.url} target="_blank" rel="noopener" className="btn-primary">View Posting</a>}
+          {job.url && <a href={job.url} target="_blank" rel="noopener noreferrer" className="btn-primary">View Posting</a>}
           {canAutoApply(job) && job.status !== 'applied' && (
             <button className="btn-apply" onClick={() => onApply(job.id)}>Auto-Apply</button>
           )}
           {!canAutoApply(job) && job.url && (
-            <a href={job.url} target="_blank" rel="noopener" className="btn-manual">Go Apply Manually</a>
+            <a href={job.url} target="_blank" rel="noopener noreferrer" className="btn-manual">Go Apply Manually</a>
           )}
         </div>
 

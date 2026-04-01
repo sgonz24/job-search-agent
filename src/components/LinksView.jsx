@@ -91,7 +91,7 @@ export default function LinksView() {
                   placeholder="https://..."
                 />
                 {link.url && (
-                  <a href={link.url} target="_blank" rel="noopener" className="lv-open-btn" title="Open link">↗</a>
+                  <a href={link.url} target="_blank" rel="noopener noreferrer" className="lv-open-btn" title="Open link">↗</a>
                 )}
               </div>
               <label className="lv-field-label">Description</label>

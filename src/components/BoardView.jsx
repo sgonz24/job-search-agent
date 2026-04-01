@@ -22,7 +22,7 @@ function JobCard({ job, selectedJobId, onSelectJob }) {
       {job.location && <p className="jcard-loc">{job.location}</p>}
       {job.salary && <p className="jsalary">{job.salary}</p>}
       {!canAutoApply(job) && job.url && (
-        <a href={job.url} target="_blank" rel="noopener" className="jcard-link" onClick={e => e.stopPropagation()}>View & Apply</a>
+        <a href={job.url} target="_blank" rel="noopener noreferrer" className="jcard-link" onClick={e => e.stopPropagation()}>View & Apply</a>
       )}
       {job.match_reasons?.length > 0 && (
         <div className="jtags">{job.match_reasons.slice(0, 2).map((r, i) => <span key={i} className="jtag">{r}</span>)}</div>

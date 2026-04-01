@@ -1,0 +1,4 @@
+{"type":"server-started","port":53870,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:53870","screen_dir":"/Users/sonnygonzalezsolartech/job-search-app/frontend/.superpowers/brainstorm/4362-1775013702/content","state_dir":"/Users/sonnygonzalezsolartech/job-search-app/frontend/.superpowers/brainstorm/4362-1775013702/state"}
+{"type":"screen-added","file":"/Users/sonnygonzalezsolartech/job-search-app/frontend/.superpowers/brainstorm/4362-1775013702/content/layout-proposal.html"}
+{"type":"screen-added","file":"/Users/sonnygonzalezsolartech/job-search-app/frontend/.superpowers/brainstorm/4362-1775013702/content/layout-v2.html"}
+{"type":"server-stopped","reason":"idle timeout"}

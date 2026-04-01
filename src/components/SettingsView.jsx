@@ -137,7 +137,7 @@ export default function SettingsView() {
         {/* About */}
         <div className="sv-section sv-about">
           <h3>About</h3>
-          <p>Job Search Agent — built by <a href="https://aiforroi.co" target="_blank" rel="noopener">aiforroi.co</a></p>
+          <p>Job Search Agent — built by <a href="https://aiforroi.co" target="_blank" rel="noopener noreferrer">aiforroi.co</a></p>
           <p className="sv-version">Version 2.0 — JobHQ Redesign</p>
         </div>
       </div>
