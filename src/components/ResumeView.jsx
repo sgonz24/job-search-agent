@@ -1,5 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './ResumeView.css'
+
+const STORAGE_KEY = 'jobhq-resume-versions'
+
+const DEFAULT_VERSIONS = [
+  { id: 1, name: 'Sonny_Gonzalez_VP_Marketing_v3.pdf', url: '', date: '2026-03-28', sentTo: ['Twilio', 'Figma', 'Stripe'] },
+  { id: 2, name: 'Sonny_Gonzalez_VP_Marketing_v2.pdf', url: '', date: '2026-03-15', sentTo: ['Chime', 'Notion'] },
+]
 
 const RESUME_TIPS = [
   { icon: '🎯', title: 'Tailor for Each Role', body: 'Customize your summary and top skills to match the job description. ATS systems rank keyword matches.' },
@@ -8,12 +15,21 @@ const RESUME_TIPS = [
   { icon: '🤖', title: 'ATS-Friendly Format', body: 'Use standard section headers, avoid tables/columns, and save as PDF. Most ATS systems parse single-column layouts best.' },
 ]
 
+function loadVersions() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY)
+    if (saved) return JSON.parse(saved)
+  } catch {}
+  return DEFAULT_VERSIONS
+}
+
 export default function ResumeView() {
-  const [versions, setVersions] = useState([
-    { id: 1, name: 'Sonny_Gonzalez_VP_Marketing_v3.pdf', url: '', date: '2026-03-28', sentTo: ['Twilio', 'Figma', 'Stripe'] },
-    { id: 2, name: 'Sonny_Gonzalez_VP_Marketing_v2.pdf', url: '', date: '2026-03-15', sentTo: ['Chime', 'Notion'] },
-  ])
+  const [versions, setVersions] = useState(loadVersions)
   const [activeVersion, setActiveVersion] = useState(0)
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(versions))
+  }, [versions])
   const [showAddForm, setShowAddForm] = useState(false)
   const [newVersion, setNewVersion] = useState({ name: '', url: '' })
 

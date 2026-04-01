@@ -12,14 +12,14 @@ function renderTweetBody(html) {
 }
 
 const MOCK_TWEETS = [
-  { id: 1, name: 'Anthropic', handle: '@AnthropicAI', avatar: '#1d9bf0', time: '2h', body: '<b>Claude Code</b> now supports autonomous multi-file editing with tool use.', tags: [{ label: 'AI', color: 'ai' }, { label: 'Claude', color: 'claude' }], likes: '4.8K', retweets: '1.2K', comments: '342' },
-  { id: 2, name: 'Lenny Rachitsky', handle: '@lennysan', avatar: '#666', time: '5h', body: 'The best <b>VP of Marketing</b> hires all had one thing in common: they could tie every campaign back to revenue within 48 hours.', tags: [{ label: 'Career', color: 'career' }], likes: '2.1K', retweets: '410', comments: '89' },
-  { id: 3, name: 'Devin AI', handle: '@cognition', avatar: '#7c3aed', time: '8h', body: 'Marketing teams using <b>AI agents</b> for competitive analysis are shipping campaigns 3x faster.', tags: [{ label: 'AI', color: 'ai' }, { label: 'MarTech', color: 'tech' }], likes: '890', retweets: '203', comments: '56' },
+  { id: 1, name: 'Anthropic', handle: '@AnthropicAI', avatar: '#1d9bf0', time: '2h', url: 'https://x.com/AnthropicAI', body: '<b>Claude Code</b> now supports autonomous multi-file editing with tool use.', tags: [{ label: 'AI', color: 'ai' }, { label: 'Claude', color: 'claude' }], likes: '4.8K', retweets: '1.2K', comments: '342' },
+  { id: 2, name: 'Lenny Rachitsky', handle: '@lennysan', avatar: '#666', time: '5h', url: 'https://x.com/lennysan', body: 'The best <b>VP of Marketing</b> hires all had one thing in common: they could tie every campaign back to revenue within 48 hours.', tags: [{ label: 'Career', color: 'career' }], likes: '2.1K', retweets: '410', comments: '89' },
+  { id: 3, name: 'Devin AI', handle: '@cognition', avatar: '#7c3aed', time: '8h', url: 'https://x.com/cognabordev', body: 'Marketing teams using <b>AI agents</b> for competitive analysis are shipping campaigns 3x faster.', tags: [{ label: 'AI', color: 'ai' }, { label: 'MarTech', color: 'tech' }], likes: '890', retweets: '203', comments: '56' },
 ]
 
 const MOCK_NEWS = [
-  { id: 1, source: 'TechCrunch', title: 'AI-powered job platforms see 300% surge in VP-level placements', time: '45 min ago', readTime: '3 min' },
-  { id: 2, source: 'The Verge', title: 'Claude 4.5 benchmarks show major gains in code generation', time: '2h ago', readTime: '5 min' },
+  { id: 1, source: 'TechCrunch', title: 'AI-powered job platforms see 300% surge in VP-level placements', time: '45 min ago', readTime: '3 min', url: 'https://techcrunch.com/category/artificial-intelligence/' },
+  { id: 2, source: 'The Verge', title: 'Claude 4.5 benchmarks show major gains in code generation', time: '2h ago', readTime: '5 min', url: 'https://www.theverge.com/ai-artificial-intelligence' },
 ]
 
 export default function TrendingPanel({ collapsed, onToggleCollapse }) {
@@ -53,7 +53,7 @@ export default function TrendingPanel({ collapsed, onToggleCollapse }) {
       </div>
       <div className="tp-feed">
         {tab === 'x' && data.tweets.map(t => (
-          <div key={t.id} className="tweet">
+          <a key={t.id} className="tweet" href={t.url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
             <div className="tweet-header">
               <div className="tweet-avatar" style={{ background: t.avatar }} />
               <div>
@@ -71,14 +71,14 @@ export default function TrendingPanel({ collapsed, onToggleCollapse }) {
               <span>🔄 {t.retweets}</span>
               <span>❤️ {t.likes}</span>
             </div>
-          </div>
+          </a>
         ))}
         {tab === 'news' && data.news.map(n => (
-          <div key={n.id} className="news-item">
+          <a key={n.id} className="news-item" href={n.url || '#'} target="_blank" rel="noopener noreferrer" style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
             <div className="news-source">{n.source}</div>
             <div className="news-title">{n.title}</div>
             <div className="news-meta">{n.time} · {n.readTime} read</div>
-          </div>
+          </a>
         ))}
         {tab === 'hn' && <div className="tp-placeholder">HN feed coming soon</div>}
       </div>

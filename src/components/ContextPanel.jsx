@@ -52,13 +52,24 @@ export default function ContextPanel({ activity }) {
       <div className="cp-section">
         <div className="cp-label"><span className="cp-dot" style={{ background: '#f97316' }} /> Quick Access</div>
         {links.map((lnk, i) => (
-          <div key={i} className="qlink">
-            <div className="qlink-icon">{lnk.icon}</div>
-            <div>
-              <div className="qlink-text">{lnk.title}</div>
-              <div className="qlink-sub">{lnk.sub}</div>
+          lnk.url ? (
+            <a key={i} className="qlink qlink-clickable" href={lnk.url} target="_blank" rel="noopener noreferrer">
+              <div className="qlink-icon">{lnk.icon}</div>
+              <div>
+                <div className="qlink-text">{lnk.title}</div>
+                <div className="qlink-sub">{lnk.sub || lnk.url}</div>
+              </div>
+              <span className="qlink-arrow">↗</span>
+            </a>
+          ) : (
+            <div key={i} className="qlink">
+              <div className="qlink-icon">{lnk.icon}</div>
+              <div>
+                <div className="qlink-text">{lnk.title}</div>
+                <div className="qlink-sub">{lnk.sub || 'No URL set'}</div>
+              </div>
             </div>
-          </div>
+          )
         ))}
       </div>
       <div className="cp-section">

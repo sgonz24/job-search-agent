@@ -36,6 +36,10 @@
   cursor: pointer; transition: background 0.15s; margin-bottom: 0.15rem;
 }
 .qlink:hover { background: #111118; }
+.qlink-clickable { text-decoration: none; color: inherit; }
+.qlink-clickable:hover .qlink-text { color: #60a5fa; }
+.qlink-clickable:hover .qlink-arrow { opacity: 1; }
+.qlink-arrow { font-size: 0.6rem; color: #60a5fa; opacity: 0; transition: opacity 0.15s; margin-left: auto; }
 .qlink-icon {
   width: 26px; height: 26px; border-radius: 6px;
   background: #1a1a2e; display: flex; align-items: center; justify-content: center;
