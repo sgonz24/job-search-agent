@@ -66,6 +66,17 @@ db.exec(`
     FOREIGN KEY (job_id) REFERENCES jobs(id)
   );
 
+  CREATE TABLE IF NOT EXISTS profile_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    icon TEXT DEFAULT '🔗',
+    title TEXT NOT NULL,
+    sub TEXT DEFAULT '',
+    url TEXT DEFAULT '',
+    sort_order INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  );
+
   CREATE INDEX IF NOT EXISTS idx_jobs_tier ON jobs(tier);
   CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
   CREATE INDEX IF NOT EXISTS idx_jobs_score ON jobs(fit_score DESC);
