@@ -1,0 +1,168 @@
+.prep-view {
+  flex: 1; padding: 2rem; overflow-y: auto;
+}
+.prep-view::-webkit-scrollbar { width: 3px; }
+.prep-view::-webkit-scrollbar-thumb { background: #222; border-radius: 2px; }
+
+.pv-header {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  margin-bottom: 1.5rem; gap: 1rem; flex-wrap: wrap;
+}
+.pv-header h2 { font-size: 1.2rem; color: #fff; margin-bottom: 0.3rem; }
+.pv-subtitle { font-size: 0.78rem; color: #555; line-height: 1.5; }
+
+.pv-actions { display: flex; gap: 0.5rem; }
+.pv-add-btn {
+  padding: 0.45rem 1rem; border-radius: 8px;
+  border: 1.5px solid #1a1a2e; background: transparent;
+  color: #888; font-size: 0.78rem; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.15s;
+}
+.pv-add-btn:hover { border-color: #a78bfa; color: #a78bfa; }
+.pv-practice-btn {
+  padding: 0.45rem 1.25rem; border-radius: 8px;
+  border: none; background: #a78bfa; color: #000;
+  font-weight: 600; font-size: 0.78rem; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.2s;
+}
+.pv-practice-btn:hover { background: #c4b5fd; }
+
+/* Add form */
+.pv-add-form {
+  background: #0c0c14; border: 1px solid #1a1a2e;
+  border-radius: 10px; padding: 1rem; margin-bottom: 1rem;
+}
+.pv-add-row { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+.pv-input {
+  flex: 1; min-width: 200px; padding: 0.4rem 0.6rem; border-radius: 6px;
+  border: 1px solid #1a1a2e; background: #09090b; color: #e5e5e5;
+  font-size: 0.78rem; font-family: 'Inter', sans-serif; outline: none;
+}
+.pv-input:focus { border-color: #a78bfa; }
+.pv-input::placeholder { color: #333; }
+.pv-input-sm { max-width: 120px; min-width: 100px; }
+.pv-select {
+  padding: 0.4rem 0.6rem; border-radius: 6px;
+  border: 1px solid #1a1a2e; background: #09090b; color: #e5e5e5;
+  font-size: 0.78rem; font-family: 'Inter', sans-serif;
+}
+.pv-save-q {
+  padding: 0.4rem 1rem; border-radius: 6px; border: none;
+  background: #a78bfa; color: #000; font-weight: 600;
+  font-size: 0.78rem; cursor: pointer; font-family: 'Inter', sans-serif;
+}
+
+/* Tabs */
+.pv-tabs {
+  display: flex; gap: 0.25rem; margin-bottom: 1rem;
+  border-bottom: 1px solid #1a1a2e; padding-bottom: 0;
+}
+.pv-tab {
+  padding: 0.5rem 0.8rem; border: none; background: none;
+  color: #555; font-size: 0.75rem; cursor: pointer;
+  border-bottom: 2px solid transparent; transition: all 0.15s;
+  font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 0.35rem;
+}
+.pv-tab:hover { color: #888; }
+.pv-tab.active { color: #a78bfa; border-bottom-color: #a78bfa; }
+.pv-tab-count {
+  font-size: 0.6rem; background: #1a1a2e; color: #666;
+  padding: 0.1rem 0.35rem; border-radius: 8px;
+}
+
+/* Question list */
+.pv-list { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.pv-question {
+  background: #0c0c14; border: 1px solid #1a1a2e;
+  border-radius: 10px; padding: 1rem; cursor: pointer;
+  transition: all 0.15s;
+}
+.pv-question:hover { border-color: #252540; }
+.pv-question.expanded { border-color: #a78bfa; border-left: 3px solid #a78bfa; }
+
+.pv-q-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; }
+.pv-q-meta { display: flex; gap: 0.4rem; align-items: center; }
+.pv-q-cat {
+  font-size: 0.55rem; padding: 0.15rem 0.45rem; border-radius: 4px;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.pv-q-cat.cat-behavioral { background: rgba(74,222,128,0.15); color: #4ade80; }
+.pv-q-cat.cat-strategic { background: rgba(212,160,23,0.15); color: #D4A017; }
+.pv-q-cat.cat-technical { background: rgba(34,211,238,0.15); color: #22d3ee; }
+.pv-q-cat.cat-situational { background: rgba(249,115,22,0.15); color: #f97316; }
+.pv-q-tag { font-size: 0.6rem; color: #444; }
+.pv-q-chevron { color: #444; font-size: 0.7rem; }
+
+.pv-q-text { font-size: 0.85rem; color: #ccc; line-height: 1.5; font-weight: 500; }
+
+.pv-q-tip {
+  margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #1a1a2e;
+}
+.pv-q-tip h4 {
+  font-size: 0.6rem; color: #a78bfa; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 0.3rem;
+}
+.pv-q-tip p { font-size: 0.78rem; color: #777; line-height: 1.6; }
+
+/* Practice Mode */
+.practice-mode {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 60vh; gap: 1.5rem;
+}
+.practice-header {
+  display: flex; align-items: center; gap: 1rem; width: 100%; max-width: 600px;
+}
+.practice-label {
+  font-size: 0.65rem; color: #a78bfa; text-transform: uppercase;
+  letter-spacing: 1px; font-weight: 600;
+}
+.practice-timer {
+  font-size: 1.5rem; font-weight: 700; color: #fff;
+  font-variant-numeric: tabular-nums; margin-left: auto;
+}
+.practice-stop {
+  padding: 0.35rem 0.8rem; border-radius: 6px;
+  border: 1px solid #1a1a2e; background: transparent;
+  color: #666; font-size: 0.72rem; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.15s;
+}
+.practice-stop:hover { border-color: #ef4444; color: #ef4444; }
+
+.practice-card {
+  background: #0c0c14; border: 1px solid #1a1a2e;
+  border-left: 4px solid #a78bfa; border-radius: 0 12px 12px 0;
+  padding: 2rem; max-width: 600px; width: 100%;
+}
+.practice-cat {
+  font-size: 0.6rem; color: #a78bfa; text-transform: uppercase;
+  letter-spacing: 0.5px; font-weight: 600;
+}
+.practice-question {
+  font-size: 1.15rem; color: #fff; line-height: 1.5;
+  margin: 0.75rem 0 1.25rem; font-weight: 600;
+}
+.practice-tip {
+  padding-top: 1rem; border-top: 1px solid #1a1a2e;
+}
+.practice-tip h4 {
+  font-size: 0.6rem; color: #a78bfa; text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 0.3rem;
+}
+.practice-tip p { font-size: 0.8rem; color: #666; line-height: 1.6; }
+
+.practice-actions { display: flex; gap: 0.75rem; }
+.practice-next {
+  padding: 0.5rem 1.5rem; border-radius: 8px; border: none;
+  background: #a78bfa; color: #000; font-weight: 600;
+  font-size: 0.85rem; cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+.practice-next:hover { background: #c4b5fd; }
+.practice-pause {
+  padding: 0.5rem 1.25rem; border-radius: 8px;
+  border: 1.5px solid #1a1a2e; background: transparent;
+  color: #888; font-size: 0.78rem; cursor: pointer;
+  font-family: 'Inter', sans-serif; transition: all 0.15s;
+}
+.practice-pause:hover { border-color: #a78bfa; color: #a78bfa; }
