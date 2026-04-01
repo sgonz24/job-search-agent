@@ -1,0 +1,48 @@
+.sidebar {
+  width: 64px;
+  background: #0c0c14;
+  border-right: 1px solid #1a1a2e;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem 0;
+  gap: 0.25rem;
+  flex-shrink: 0;
+}
+.sb-logo {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #D4A017, #F0C040);
+  margin-bottom: 1.25rem;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800; font-size: 0.7rem; color: #000;
+}
+.sb-icon {
+  width: 36px; height: 36px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  color: #444; background: none; border: none;
+  cursor: pointer; transition: all 0.15s;
+  position: relative;
+}
+.sb-icon:hover { background: #1a1a2e; color: #888; }
+.sb-icon.active { background: #1a1a2e; color: #D4A017; }
+.sb-tooltip {
+  display: none; position: absolute; left: 48px;
+  background: #222; color: #fff;
+  padding: 0.2rem 0.5rem; border-radius: 4px;
+  font-size: 0.6rem; white-space: nowrap; z-index: 10;
+}
+.sb-icon:hover .sb-tooltip { display: block; }
+.sb-badge {
+  position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: #ef4444; border: 2px solid #0c0c14;
+}
+.sb-spacer { flex: 1; }
+.sb-avatar {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: linear-gradient(135deg, #333, #555);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.55rem; color: #aaa; font-weight: 600;
+}
