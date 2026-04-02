@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JobHQ - System Breakdown & Standard Operating Procedures</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #050508;
+    --bg-surface: #0a0a10;
+    --bg-card: #0f0f18;
+    --bg-elevated: #161622;
+    --border: rgba(255,255,255,0.06);
+    --border-hover: rgba(255,255,255,0.12);
+    --gold: #D4A017;
+    --gold-dim: rgba(212,160,23,0.15);
+    --gold-glow: rgba(212,160,23,0.08);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.12);
+    --cyan: #22d3ee;
+    --cyan-dim: rgba(34,211,238,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.12);
+    --text-primary: #e8e8ed;
+    --text-secondary: #8888a0;
+    --text-tertiary: #55556a;
+    --radius-lg: 1.25rem;
+    --radius-md: 0.75rem;
+    --radius-sm: 0.5rem;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    padding: 0;
+  }
+
+  /* ── Noise Overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; z-index: 50;
+    pointer-events: none;
+    opacity: 0.025;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ── Ambient Gradient ── */
+  .ambient {
+    position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 600px;
+    background: radial-gradient(ellipse, rgba(212,160,23,0.04) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 3rem 2rem 5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header / Hero ── */
+  .hero {
+    text-align: center;
+    padding: 4rem 0 3rem;
+  }
+
+  .logo-mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px; height: 72px;
+    background: linear-gradient(135deg, var(--bg-card), var(--bg-elevated));
+    border: 1px solid var(--border);
+    border-radius: 1.25rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 0 60px rgba(212,160,23,0.06), inset 0 1px 0 rgba(255,255,255,0.04);
+  }
+
+  .logo-text {
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -1px;
+    background: linear-gradient(135deg, var(--gold), #f0c050);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .hero h1 {
+    font-size: 2.4rem;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    line-height: 1.15;
+  }
+
+  .hero .subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    max-width: 540px;
+    margin: 0 auto 2rem;
+  }
+
+  .meta-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .meta-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.85rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+  }
+
+  .meta-chip .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .meta-chip .dot.live { background: var(--green); box-shadow: 0 0 8px rgba(74,222,128,0.4); }
+  .meta-chip .dot.gold { background: var(--gold); }
+
+  /* ── Dividers ── */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-hover), transparent);
+    margin: 3rem 0;
+  }
+
+  /* ── Section Headers ── */
+  .section-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.3rem 0.75rem;
+    background: var(--gold-dim);
+    border: 1px solid rgba(212,160,23,0.15);
+    border-radius: 100px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: var(--gold);
+    margin-bottom: 0.75rem;
+  }
+
+  h2 {
+    font-size: 1.65rem;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-desc {
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-bottom: 1.75rem;
+    max-width: 620px;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-top: 2rem;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.01em;
+  }
+
+  p { font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1rem; }
+  li { font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 0.35rem; }
+  ul, ol { padding-left: 1.25rem; margin-bottom: 1rem; }
+  strong { color: var(--text-primary); font-weight: 600; }
+
+  /* ── Cards (Double-Bezel) ── */
+  .card-shell {
+    background: rgba(255,255,255,0.015);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 3px;
+    margin-bottom: 1rem;
+  }
+
+  .card-inner {
+    background: var(--bg-card);
+    border-radius: calc(var(--radius-lg) - 3px);
+    padding: 1.5rem;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.03);
+  }
+
+  /* ── Tables ── */
+  .table-wrap {
+    background: rgba(255,255,255,0.015);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 3px;
+    margin: 1rem 0 1.5rem;
+    overflow: hidden;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--bg-card);
+    border-radius: calc(var(--radius-lg) - 3px);
+    overflow: hidden;
+  }
+
+  th {
+    text-align: left;
+    padding: 0.7rem 1rem;
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-tertiary);
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 0.65rem 1rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border);
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.015); }
+
+  /* ── Code ── */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    padding: 0.15rem 0.45rem;
+    border-radius: 5px;
+    color: var(--gold);
+  }
+
+  pre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    background: var(--bg-surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    overflow-x: auto;
+    margin: 1rem 0 1.5rem;
+    line-height: 1.8;
+  }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.65rem;
+    border-radius: 100px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .badge.green { background: var(--green-dim); color: var(--green); }
+  .badge.yellow { background: var(--yellow-dim); color: var(--yellow); }
+  .badge.red { background: var(--red-dim); color: var(--red); }
+  .badge.cyan { background: var(--cyan-dim); color: var(--cyan); }
+  .badge.gold { background: var(--gold-dim); color: var(--gold); }
+
+  /* ── Callout ── */
+  .callout {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--gold);
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    padding: 1rem 1.25rem;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .callout strong { color: var(--gold); }
+
+  /* ── Tier Cards ── */
+  .tier-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.75rem;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .tier-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    text-align: center;
+  }
+
+  .tier-card .tier-letter {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 0.25rem;
+  }
+
+  .tier-card .tier-range { font-size: 0.7rem; color: var(--text-tertiary); font-weight: 600; }
+  .tier-card .tier-label { font-size: 0.72rem; color: var(--text-secondary); margin-top: 0.25rem; }
+  .tier-a .tier-letter { color: var(--gold); }
+  .tier-b .tier-letter { color: var(--cyan); }
+  .tier-c .tier-letter { color: var(--text-secondary); }
+  .tier-d .tier-letter { color: var(--text-tertiary); }
+
+  /* ── Architecture Diagram ── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin: 1rem 0 1.5rem;
+  }
+
+  .arch-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .arch-card .arch-icon {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .arch-card h4 {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+  }
+
+  .arch-card .arch-tech {
+    font-size: 0.68rem;
+    color: var(--gold);
+    font-weight: 600;
+    margin-bottom: 0.15rem;
+  }
+
+  .arch-card .arch-host {
+    font-size: 0.65rem;
+    color: var(--text-tertiary);
+  }
+
+  /* ── Cost Row ── */
+  .cost-total {
+    background: var(--gold-dim);
+    border: 1px solid rgba(212,160,23,0.2);
+    border-radius: var(--radius-md);
+    padding: 1rem 1.25rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+  }
+
+  .cost-total .cost-label { font-size: 0.85rem; font-weight: 700; color: var(--gold); }
+  .cost-total .cost-amount { font-size: 1.4rem; font-weight: 800; color: var(--gold); }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center;
+    padding: 3rem 0 1rem;
+    color: var(--text-tertiary);
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+  }
+
+  .footer-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-hover), transparent);
+    margin-bottom: 2rem;
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .container { padding: 1.5rem 1rem 3rem; }
+    .hero h1 { font-size: 1.6rem; }
+    .arch-grid { grid-template-columns: 1fr; }
+    .tier-grid { grid-template-columns: repeat(2, 1fr); }
+    .meta-row { flex-direction: column; gap: 0.5rem; }
+  }
+
+  /* ── Print styles ── */
+  @media print {
+    body { background: white; color: #222; }
+    body::before { display: none; }
+    .ambient { display: none; }
+    .card-shell, .table-wrap { border-color: #ddd; }
+    .card-inner, table, .callout, pre { background: #fafafa; }
+    th { background: #f0f0f0; color: #555; }
+    td, p, li { color: #333; }
+    h2, h3, strong { color: #111; }
+    code { background: #eee; color: #b45309; border-color: #ddd; }
+    .badge.green { background: #dcfce7; color: #166534; }
+    .badge.yellow { background: #fef9c3; color: #854d0e; }
+    .section-eyebrow { background: #fef3c7; color: #92400e; border-color: #fcd34d; }
+  }
+</style>
+</head>
+<body>
+
+<div class="ambient"></div>
+
+<div class="container">
+
+  <!-- ═══ HERO ═══ -->
+  <div class="hero">
+    <div class="logo-mark">
+      <span class="logo-text">JQ</span>
+    </div>
+    <h1>JobHQ</h1>
+    <p class="subtitle">System Breakdown & Standard Operating Procedures</p>
+    <div class="meta-row">
+      <span class="meta-chip"><span class="dot live"></span> Production</span>
+      <span class="meta-chip"><span class="dot gold"></span> v1.0 &mdash; April 2026</span>
+      <span class="meta-chip">Sonny Gonzalez</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 1. SYSTEM OVERVIEW ═══ -->
+  <div class="section-eyebrow">01 &mdash; Overview</div>
+  <h2>System Overview</h2>
+  <p class="section-desc">A full-stack AI-powered platform that discovers, scores, and manages VP Marketing / CMO / Head of Marketing opportunities across 25+ sources. Generates cover letters, LinkedIn outreach, and email templates. Auto-applies to Greenhouse and Lever boards.</p>
+
+  <h3>Architecture</h3>
+  <div class="arch-grid">
+    <div class="arch-card">
+      <div class="arch-icon" style="background: var(--cyan-dim);">&#9671;</div>
+      <h4>Frontend</h4>
+      <div class="arch-tech">React 19 + Vite 8</div>
+      <div class="arch-host">Vercel</div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon" style="background: var(--gold-dim);">&#9881;</div>
+      <h4>Backend API</h4>
+      <div class="arch-tech">Node.js + Express 5</div>
+      <div class="arch-host">Railway</div>
+    </div>
+    <div class="arch-card">
+      <div class="arch-icon" style="background: var(--green-dim);">&#9776;</div>
+      <h4>Database</h4>
+      <div class="arch-tech">SQLite (better-sqlite3)</div>
+      <div class="arch-host">Railway Volume</div>
+    </div>
+  </div>
+
+  <h3>Project Structure</h3>
+  <pre>job-search-app/
+├── frontend/                # React SPA (Vercel)
+│   ├── src/App.jsx          # Main app + state management
+│   ├── src/components/      # All UI views
+│   ├── vercel.json          # Proxies /api/* to Railway
+│   └── package.json
+│
+├── backend/                 # Express API (Railway)
+│   ├── src/server.js        # API routes + middleware
+│   ├── src/db.js            # SQLite schema + queries
+│   ├── src/job-sources.js   # 25 job board scrapers/APIs
+│   ├── src/search-engine.js # Orchestrates search pipeline
+│   ├── src/scorer.js        # AI job fit scoring
+│   ├── src/cover-letter-gen.js
+│   ├── src/apply-agent/     # Auto-apply engine (Playwright)
+│   ├── src/routes/          # trending, insights, profile
+│   ├── data/jobs.db         # SQLite database
+│   └── package.json
+│
+└── chrome-extension/        # Browser extension (optional)</pre>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 2. JOB SOURCES ═══ -->
+  <div class="section-eyebrow">02 &mdash; Sources</div>
+  <h2>Job Sources (25 Total)</h2>
+  <p class="section-desc">Three waves of data collection, prioritized by reliability. API-based sources are most consistent.</p>
+
+  <h3>Wave 1: API-Based <span class="badge green">Most Reliable</span></h3>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Source</th><th>Method</th><th>Coverage</th></tr>
+    <tr><td>1</td><td><strong>Greenhouse Boards</strong></td><td>JSON API</td><td>200+ boards (Figma, Stripe, Notion, Anthropic, OpenAI...)</td></tr>
+    <tr><td>2</td><td><strong>Lever Boards</strong></td><td>JSON API</td><td>60+ company boards</td></tr>
+    <tr><td>3</td><td>RemoteOK</td><td>JSON API</td><td>Remote marketing/VP roles</td></tr>
+    <tr><td>4</td><td>TheMuse</td><td>JSON API</td><td>Marketing leadership</td></tr>
+    <tr><td>5</td><td>WorkingNomads</td><td>JSON API</td><td>Remote marketing</td></tr>
+    <tr><td>6</td><td>Remotive</td><td>JSON API</td><td>Remote-only roles</td></tr>
+    <tr><td>7</td><td>Jobicy</td><td>JSON API</td><td>Remote + salary data</td></tr>
+    <tr><td>8</td><td>Arbeitnow</td><td>JSON API</td><td>EU + US remote</td></tr>
+    <tr><td>9</td><td>Himalayas</td><td>JSON API</td><td>Startup remote</td></tr>
+    <tr><td>10</td><td>Findwork</td><td>JSON API</td><td>Startup marketing</td></tr>
+    <tr><td>11</td><td><strong>LinkedIn</strong></td><td>Guest API</td><td>US VP/Director/CMO, paginated</td></tr>
+  </table></div>
+
+  <h3>Wave 2: HTML Scrapers <span class="badge yellow">May Be Blocked</span></h3>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Source</th><th>Status</th></tr>
+    <tr><td>12</td><td>Indeed</td><td>Often blocked (anti-bot)</td></tr>
+    <tr><td>13</td><td>Glassdoor</td><td>Often blocked</td></tr>
+    <tr><td>14</td><td>ZipRecruiter</td><td>Often blocked</td></tr>
+    <tr><td>15</td><td>SimplyHired</td><td>Intermittent</td></tr>
+    <tr><td>16</td><td>Wellfound</td><td>Intermittent</td></tr>
+  </table></div>
+
+  <h3>Wave 3: Niche & Remote-First</h3>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Source</th><th>Focus</th></tr>
+    <tr><td>17</td><td>WeWorkRemotely</td><td>Remote marketing leadership</td></tr>
+    <tr><td>18-20</td><td>BuiltIn (3 queries)</td><td>VP, CMO, Head of, Director</td></tr>
+    <tr><td>21-22</td><td>FlexJobs (2 queries)</td><td>VP Marketing, CMO remote</td></tr>
+    <tr><td>23</td><td>DynamiteJobs</td><td>Remote leadership</td></tr>
+    <tr><td>24</td><td>DailyRemote</td><td>Daily listings</td></tr>
+    <tr><td>25</td><td>NoDesk</td><td>Remote-first companies</td></tr>
+    <tr><td>26</td><td>MarketingHire</td><td>Marketing-specific</td></tr>
+    <tr><td>27</td><td>ExitFive</td><td>B2B marketing community</td></tr>
+    <tr><td>28</td><td>AMA</td><td>American Marketing Association</td></tr>
+  </table></div>
+
+  <h3>Search Queries</h3>
+  <div class="card-shell"><div class="card-inner">
+    <ol>
+      <li>"VP of Marketing remote"</li>
+      <li>"Vice President Marketing remote"</li>
+      <li>"Head of Marketing remote"</li>
+      <li>"CMO remote"</li>
+      <li>"VP Growth Marketing remote"</li>
+      <li>"VP Marketing AI"</li>
+    </ol>
+  </div></div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 3. SEARCH PIPELINE ═══ -->
+  <div class="section-eyebrow">03 &mdash; Pipeline</div>
+  <h2>Search & Scoring Pipeline</h2>
+  <p class="section-desc">End-to-end flow from trigger to scored, enriched job entries.</p>
+
+  <div class="card-shell"><div class="card-inner">
+    <ol>
+      <li><strong>Trigger</strong> &mdash; Manual (dashboard button) or cron (every 6 hours)</li>
+      <li><strong>Wave 1</strong> &mdash; All API sources run in parallel (~5-10 seconds)</li>
+      <li><strong>Wave 2</strong> &mdash; Query scrapers run sequentially with 2s delays</li>
+      <li><strong>Wave 3</strong> &mdash; Niche boards run in parallel</li>
+      <li><strong>Deduplication</strong> &mdash; Normalized title + company name</li>
+      <li><strong>Scoring</strong> &mdash; 0-100 fit score (title match, seniority, marketing relevance, remote, AI keywords)</li>
+      <li><strong>Content Gen</strong> &mdash; Cover letter, LinkedIn msg, email outreach for each job</li>
+      <li><strong>Storage</strong> &mdash; Upsert into SQLite. Higher scores overwrite lower.</li>
+    </ol>
+  </div></div>
+
+  <h3>Tier System</h3>
+  <div class="tier-grid">
+    <div class="tier-card tier-a">
+      <div class="tier-letter">A</div>
+      <div class="tier-range">80 &ndash; 100</div>
+      <div class="tier-label">Best match</div>
+    </div>
+    <div class="tier-card tier-b">
+      <div class="tier-letter">B</div>
+      <div class="tier-range">60 &ndash; 79</div>
+      <div class="tier-label">Good match</div>
+    </div>
+    <div class="tier-card tier-c">
+      <div class="tier-letter">C</div>
+      <div class="tier-range">40 &ndash; 59</div>
+      <div class="tier-label">Possible</div>
+    </div>
+    <div class="tier-card tier-d">
+      <div class="tier-letter">D</div>
+      <div class="tier-range">&lt; 40</div>
+      <div class="tier-label">Filtered out</div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 4. AUTO-APPLY ═══ -->
+  <div class="section-eyebrow">04 &mdash; Auto-Apply</div>
+  <h2>Auto-Apply System</h2>
+
+  <div class="callout">
+    <strong>Greenhouse + Lever only.</strong> These have predictable form structures the Playwright agent can fill. LinkedIn, Indeed, and others require manual application.
+  </div>
+
+  <div class="card-shell"><div class="card-inner">
+    <ol>
+      <li>Select target tiers (A, B, C) and max applications</li>
+      <li>System filters to unapplied Greenhouse/Lever jobs</li>
+      <li>Jobs sorted by fit score (highest first)</li>
+      <li>Playwright agent opens each form, fills fields, uploads resume, submits</li>
+      <li>Status updated to "applied" with timestamp</li>
+      <li>Success/failure logged to activity feed</li>
+    </ol>
+  </div></div>
+
+  <h3>Rate Limits</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Action</th><th>Limit</th></tr>
+    <tr><td>General API calls</td><td>100 per 15 min</td></tr>
+    <tr><td>Search triggers</td><td>5 per 15 min</td></tr>
+    <tr><td>Auto-apply triggers</td><td>3 per 15 min</td></tr>
+    <tr><td>Max apps per batch</td><td>25</td></tr>
+  </table></div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 5. DASHBOARD ═══ -->
+  <div class="section-eyebrow">05 &mdash; Dashboard</div>
+  <h2>Dashboard Views</h2>
+
+  <div class="table-wrap"><table>
+    <tr><th>View</th><th>Description</th></tr>
+    <tr><td><strong>Pipeline</strong></td><td>Stats strip, filter bar, sortable job table, detail drawer with cover letters</td></tr>
+    <tr><td><strong>Board</strong></td><td>Kanban columns: New, Saved, Applied, Interviewing, Offer, Rejected</td></tr>
+    <tr><td><strong>Resume</strong></td><td>Version management, company tracking. Persists in <code>localStorage</code></td></tr>
+    <tr><td><strong>Links</strong></td><td>Web presence links (Resume, LinkedIn, GitHub, custom). Persists in SQLite</td></tr>
+    <tr><td><strong>Interview Prep</strong></td><td>AI-generated practice questions for VP Marketing roles</td></tr>
+    <tr><td><strong>Settings</strong></td><td>Scan interval, auto-apply tiers, max apps, notifications</td></tr>
+  </table></div>
+
+  <h3>Side Panels</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Panel</th><th>Position</th><th>Content</th></tr>
+    <tr><td><strong>Trending</strong></td><td>Left</td><td>8 X/AI posts + 7 news items with clickable links. Tabs: X/AI, News, HN</td></tr>
+    <tr><td><strong>Context</strong></td><td>Right</td><td>AI Insights, Interview Prep, Quick Access links (clickable), Activity feed</td></tr>
+  </table></div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 6. DATABASE ═══ -->
+  <div class="section-eyebrow">06 &mdash; Database</div>
+  <h2>Database Schema</h2>
+
+  <h3>jobs</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+    <tr><td><code>id</code></td><td>INTEGER PK</td><td>Auto-increment</td></tr>
+    <tr><td><code>source</code></td><td>TEXT</td><td>LinkedIn, Greenhouse, Lever, etc.</td></tr>
+    <tr><td><code>title</code></td><td>TEXT</td><td>Job title</td></tr>
+    <tr><td><code>company</code></td><td>TEXT</td><td>Company name</td></tr>
+    <tr><td><code>url</code></td><td>TEXT</td><td>Direct application URL</td></tr>
+    <tr><td><code>fit_score</code></td><td>INTEGER</td><td>0-100 fit score</td></tr>
+    <tr><td><code>tier</code></td><td>TEXT</td><td>A, B, C, or D</td></tr>
+    <tr><td><code>status</code></td><td>TEXT</td><td>new / saved / applied / interviewing / rejected / offer / hidden</td></tr>
+    <tr><td><code>cover_letter</code></td><td>TEXT</td><td>AI-generated cover letter</td></tr>
+    <tr><td><code>linkedin_msg</code></td><td>TEXT</td><td>AI-generated LinkedIn outreach</td></tr>
+    <tr><td><code>email_msg</code></td><td>TEXT</td><td>AI-generated email template</td></tr>
+    <tr><td><code>easy_apply</code></td><td>INTEGER</td><td>1 if LinkedIn Easy Apply</td></tr>
+    <tr><td><code>apply_method</code></td><td>TEXT</td><td>greenhouse / lever / easy_apply / external</td></tr>
+    <tr><td><code>applied_at</code></td><td>TEXT</td><td>Timestamp when applied</td></tr>
+    <tr><td><code>notes</code></td><td>TEXT</td><td>User notes</td></tr>
+  </table></div>
+  <p><strong>Unique constraint:</strong> <code>(title, company)</code> &mdash; prevents duplicate entries.</p>
+
+  <h3>profile_links</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Column</th><th>Type</th><th>Description</th></tr>
+    <tr><td><code>icon</code></td><td>TEXT</td><td>Emoji icon</td></tr>
+    <tr><td><code>title</code></td><td>TEXT</td><td>Link name</td></tr>
+    <tr><td><code>url</code></td><td>TEXT</td><td>Full URL</td></tr>
+    <tr><td><code>sort_order</code></td><td>INTEGER</td><td>Display order</td></tr>
+  </table></div>
+
+  <h3>search_runs &amp; activity_log</h3>
+  <p>Logs each search execution (timing, counts, tier breakdown) and all actions (searches, status changes, applications, errors).</p>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 7. API ═══ -->
+  <div class="section-eyebrow">07 &mdash; API</div>
+  <h2>API Endpoints</h2>
+
+  <div class="table-wrap"><table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="badge cyan">GET</span></td><td><code>/api/jobs</code></td><td>List jobs (filters: tier, status, search)</td></tr>
+    <tr><td><span class="badge cyan">GET</span></td><td><code>/api/jobs/:id</code></td><td>Single job detail</td></tr>
+    <tr><td><span class="badge gold">PATCH</span></td><td><code>/api/jobs/:id/status</code></td><td>Update job status</td></tr>
+    <tr><td><span class="badge gold">PATCH</span></td><td><code>/api/jobs/:id/notes</code></td><td>Update job notes</td></tr>
+    <tr><td><span class="badge gold">POST</span></td><td><code>/api/jobs/:id/apply</code></td><td>Apply to single job</td></tr>
+    <tr><td><span class="badge cyan">GET</span></td><td><code>/api/stats</code></td><td>Dashboard statistics</td></tr>
+    <tr><td><span class="badge gold">POST</span></td><td><code>/api/search</code></td><td>Trigger manual search</td></tr>
+    <tr><td><span class="badge cyan">GET</span></td><td><code>/api/search/status</code></td><td>Search running status</td></tr>
+    <tr><td><span class="badge gold">POST</span></td><td><code>/api/apply/auto</code></td><td>Launch auto-apply batch</td></tr>
+    <tr><td><span class="badge cyan">GET</span></td><td><code>/api/apply/status</code></td><td>Auto-apply progress</td></tr>
+    <tr><td><span class="badge cyan">GET</span></td><td><code>/api/activity</code></td><td>Activity log</td></tr>
+    <tr><td><span class="badge cyan">GET</span></td><td><code>/api/trending</code></td><td>X posts and news</td></tr>
+    <tr><td><span class="badge gold">PUT</span></td><td><code>/api/profile/links</code></td><td>Update profile links</td></tr>
+    <tr><td><span class="badge cyan">GET</span></td><td><code>/api/health</code></td><td>Health check</td></tr>
+  </table></div>
+
+  <p><strong>Auth:</strong> All POST/PATCH/PUT/DELETE require <code>x-api-key</code> header (skipped in dev).</p>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 8. DEPLOYMENT ═══ -->
+  <div class="section-eyebrow">08 &mdash; Deployment</div>
+  <h2>Deployment SOP</h2>
+
+  <h3>Frontend (Vercel) &mdash; Auto-deploys on push</h3>
+  <div class="card-shell"><div class="card-inner">
+    <ol>
+      <li>Make changes in <code>frontend/src/</code></li>
+      <li>Test locally: <code>cd frontend && npm run dev</code></li>
+      <li>Build check: <code>npm run build</code></li>
+      <li>Commit and push to <code>main</code></li>
+      <li>Vercel auto-deploys from GitHub</li>
+    </ol>
+  </div></div>
+
+  <h3>Backend (Railway) &mdash; Manual deploy</h3>
+  <div class="card-shell"><div class="card-inner">
+    <ol>
+      <li>Make changes in <code>backend/src/</code></li>
+      <li>Test locally: <code>cd backend && node src/server.js</code></li>
+      <li><strong>Copy changed files into <code>frontend/backend/</code></strong> (monorepo)</li>
+      <li>Commit and push to GitHub</li>
+      <li>Deploy: <code>cd backend && railway up</code></li>
+    </ol>
+  </div></div>
+
+  <div class="callout">
+    <strong>Monorepo note:</strong> The frontend repo contains <code>backend/</code> as a subdirectory. The standalone backend directory has its own git + Railway link. Always sync changes to both before deploying.
+  </div>
+
+  <h3>Environment Variables (Railway)</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Variable</th><th>Description</th></tr>
+    <tr><td><code>PORT</code></td><td>Server port (default 3001)</td></tr>
+    <tr><td><code>FRONTEND_URL</code></td><td>CORS origin (Vercel URL)</td></tr>
+    <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Claude API for scoring + content gen</td></tr>
+    <tr><td><code>CRON_SCHEDULE</code></td><td>Search cron (default: <code>0 */6 * * *</code>)</td></tr>
+    <tr><td><code>DB_PATH</code></td><td>SQLite path (default: <code>./data/jobs.db</code>)</td></tr>
+    <tr><td><code>API_KEY</code></td><td>Auth key for mutating endpoints</td></tr>
+  </table></div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 9. DAILY OPS ═══ -->
+  <div class="section-eyebrow">09 &mdash; Operations</div>
+  <h2>Daily Operations</h2>
+
+  <h3>Automated</h3>
+  <ul>
+    <li><strong>Every 6 hours:</strong> Full search across all sources, scoring, cover letter generation</li>
+    <li><strong>Deduplication:</strong> Same job from multiple sources stored once (highest score wins)</li>
+  </ul>
+
+  <h3>Manual Tasks</h3>
+  <div class="table-wrap"><table>
+    <tr><th>Task</th><th>How</th><th>Frequency</th></tr>
+    <tr><td>Review new jobs</td><td>Open dashboard, check Pipeline</td><td>Daily</td></tr>
+    <tr><td>Save interesting jobs</td><td>Click job &rarr; change status to "Saved"</td><td>As needed</td></tr>
+    <tr><td>Trigger fresh search</td><td>Click Search button in top bar</td><td>As needed</td></tr>
+    <tr><td>Auto-apply</td><td>Auto-apply panel &rarr; select tiers &rarr; launch</td><td>When ready</td></tr>
+    <tr><td>Track applications</td><td>Move jobs: Applied &rarr; Interviewing &rarr; Offer</td><td>Ongoing</td></tr>
+    <tr><td>Update resume</td><td>Resume view &rarr; add new version + link</td><td>When updated</td></tr>
+    <tr><td>Update links</td><td>Links view &rarr; edit URLs &rarr; Save Changes</td><td>When changed</td></tr>
+  </table></div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 10. TROUBLESHOOTING ═══ -->
+  <div class="section-eyebrow">10 &mdash; Troubleshooting</div>
+  <h2>Troubleshooting</h2>
+
+  <div class="table-wrap"><table>
+    <tr><th>Issue</th><th>Cause</th><th>Fix</th></tr>
+    <tr><td>No jobs showing</td><td>Backend down or proxy broken</td><td>Check Railway logs; verify <code>vercel.json</code> proxy</td></tr>
+    <tr><td>Search returns 0 new</td><td>All jobs already in DB</td><td>Normal &mdash; no new postings since last scan</td></tr>
+    <tr><td>LinkedIn returns 0</td><td>Rate limited</td><td>Wait 1 hour; test guest API manually</td></tr>
+    <tr><td>Auto-apply fails</td><td>Form structure changed</td><td>Check Railway logs; update selectors</td></tr>
+    <tr><td>Links not saving</td><td>Old in-memory storage</td><td>Redeploy &mdash; now uses SQLite</td></tr>
+    <tr><td>Resume gone</td><td>Browser cache cleared</td><td>Stored in localStorage &mdash; reset on clear</td></tr>
+    <tr><td>Stale data</td><td>Browser caching</td><td>Hard refresh (Cmd+Shift+R)</td></tr>
+  </table></div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 11. SECURITY ═══ -->
+  <div class="section-eyebrow">11 &mdash; Security</div>
+  <h2>Security</h2>
+
+  <div class="card-shell"><div class="card-inner">
+    <ul>
+      <li><strong>CORS</strong> &mdash; Locked to Vercel frontend URL only</li>
+      <li><strong>Helmet</strong> &mdash; Security headers on all responses</li>
+      <li><strong>Rate Limiting</strong> &mdash; Per-endpoint limits</li>
+      <li><strong>API Key Auth</strong> &mdash; All mutating endpoints require <code>x-api-key</code></li>
+      <li><strong>Input Validation</strong> &mdash; Title (100 chars), URL (http/https), notes (10K limit), links (max 20)</li>
+      <li><strong>No secrets in frontend</strong> &mdash; Only <code>VITE_API_URL</code> exposed</li>
+    </ul>
+  </div></div>
+
+  <div class="divider"></div>
+
+  <!-- ═══ 12. COST ═══ -->
+  <div class="section-eyebrow">12 &mdash; Cost</div>
+  <h2>Cost Breakdown</h2>
+
+  <div class="table-wrap"><table>
+    <tr><th>Service</th><th>Plan</th><th>Cost</th></tr>
+    <tr><td>Vercel (frontend)</td><td>Hobby</td><td>Free</td></tr>
+    <tr><td>Railway (backend)</td><td>Hobby</td><td>Free &ndash; ~$5/mo</td></tr>
+    <tr><td>GitHub</td><td>Free</td><td>Free</td></tr>
+    <tr><td>Anthropic API</td><td>Pay-as-you-go</td><td>~$2-5/mo</td></tr>
+    <tr><td>Job APIs</td><td>All free tiers</td><td>Free</td></tr>
+  </table></div>
+
+  <div class="cost-total">
+    <span class="cost-label">Estimated Monthly Total</span>
+    <span class="cost-amount">$0 &ndash; $10</span>
+  </div>
+
+  <!-- ═══ FOOTER ═══ -->
+  <div class="footer">
+    <div class="footer-line"></div>
+    <div class="logo-mark" style="width: 40px; height: 40px; display: inline-flex; margin-bottom: 0.75rem; border-radius: 0.75rem;">
+      <span class="logo-text" style="font-size: 15px;">JQ</span>
+    </div>
+    <div>JobHQ &mdash; System Breakdown & SOP v1.0</div>
+    <div style="margin-top: 0.25rem;">Built by Sonny Gonzalez &middot; April 2026</div>
+  </div>
+
+</div>
+</body>
+</html>
