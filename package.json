@@ -1,0 +1,20 @@
+{
+  "name": "sonnys-job-search-agent",
+  "version": "1.0.0",
+  "description": "AI-powered job search agent for VP of Marketing roles — searches, scores, ranks, and generates personalized outreach",
+  "main": "agent.js",
+  "scripts": {
+    "search": "node agent.js",
+    "schedule": "node scheduler.js",
+    "now": "node scheduler.js --now"
+  },
+  "keywords": ["job-search", "ai-agent", "marketing", "automation"],
+  "author": "Sonny R. Gonzalez",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "cheerio": "^1.2.0",
+    "dotenv": "^17.3.1",
+    "node-fetch": "^2.7.0"
+  }
+}
