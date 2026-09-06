@@ -29,6 +29,7 @@ async function fetchWithTimeout(url, opts = {}, timeoutMs = 10000) {
 const UA = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36';
 const HEADERS = { 'User-Agent': UA, 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8', 'Accept-Language': 'en-US,en;q=0.9' };
 
+
 function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -36,25 +37,31 @@ function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 // ══════════════════════════════════════════════════════════════════════
 
 async function searchLinkedIn(query) {
-  const url = `https://www.linkedin.com/jobs/search/?keywords=${encodeURIComponent(query)}&location=United%20States&f_WT=2&f_E=5%2C6&start=0`;
-  try {
-    const res = await fetchWithTimeout(url, { headers: HEADERS });
-    const html = await res.text();
-    const $ = cheerio.load(html);
-    const jobs = [];
-    $('div.base-card').each((i, el) => {
-      const title = $(el).find('h3.base-search-card__title').text().trim();
-      const company = $(el).find('h4.base-search-card__subtitle').text().trim();
-      const location = $(el).find('span.job-search-card__location').text().trim();
-      const link = $(el).find('a.base-card__full-link').attr('href') || '';
-      const datePosted = $(el).find('time').attr('datetime') || '';
-      // Detect Easy Apply from the listing badge
-      const cardText = $(el).text().toLowerCase();
-      const isEasyApply = cardText.includes('easy apply') || cardText.includes('easyapply');
-      if (title) jobs.push({ source: 'LinkedIn', title, company, location, url: link.split('?')[0], datePosted, query, easy_apply: isEasyApply });
-    });
-    return jobs;
-  } catch (err) { console.error(`  LinkedIn error: ${err.message}`); return []; }
+  // Use LinkedIn's public guest jobs API — the HTML page blocks server-side requests
+  const allJobs = [];
+  for (let start = 0; start <= 50; start += 25) {
+    try {
+      const apiUrl = `https://www.linkedin.com/jobs-guest/jobs/api/seeMoreJobPostings/search?keywords=${encodeURIComponent(query)}&location=United%20States&f_WT=2&f_E=5%2C6&start=${start}`;
+      const res = await fetchWithTimeout(apiUrl, { headers: HEADERS }, 15000);
+      if (!res.ok) break;
+      const html = await res.text();
+      if (!html || html.length < 100) break;
+      const $ = cheerio.load(html);
+      $('li').each((i, el) => {
+        const title = $(el).find('h3.base-search-card__title').text().trim();
+        const company = $(el).find('h4.base-search-card__subtitle').text().trim();
+        const location = $(el).find('span.job-search-card__location').text().trim();
+        const link = $(el).find('a.base-card__full-link').attr('href') || '';
+        const datePosted = $(el).find('time').attr('datetime') || '';
+        const cardText = $(el).text().toLowerCase();
+        const isEasyApply = cardText.includes('easy apply') || cardText.includes('easyapply');
+        if (title) allJobs.push({ source: 'LinkedIn', title, company, location, url: link.split('?')[0], datePosted, query, easy_apply: isEasyApply });
+      });
+      if (start < 50) await delay(1500);
+    } catch (err) { console.error(`  LinkedIn error (start=${start}): ${err.message}`); break; }
+  }
+  console.log(`  LinkedIn: ${allJobs.length} jobs for "${query}"`);
+  return allJobs;
 }
 
 // ══════════════════════════════════════════════════════════════════════
@@ -641,6 +648,110 @@ async function searchAMA() {
 }
 
 // ══════════════════════════════════════════════════════════════════════
+// 21. REMOTIVE (free JSON API — remote-only jobs)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchRemotive() {
+  try {
+    const res = await fetchWithTimeout('https://remotive.com/api/remote-jobs?category=marketing&limit=50', {
+      headers: { 'Accept': 'application/json' },
+    });
+    const data = await res.json();
+    return (data.jobs || []).filter(j => {
+      const t = (j.title || '').toLowerCase();
+      return t.includes('vp') || t.includes('vice president') || t.includes('head of') || t.includes('director') || t.includes('cmo') || t.includes('chief');
+    }).map(j => ({
+      source: 'Remotive', title: j.title, company: j.company_name || '', location: 'Remote',
+      url: j.url || '', datePosted: j.publication_date || '', salary: j.salary || '', query: 'marketing',
+    }));
+  } catch (err) { console.error(`  Remotive error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 22. JOBICY (free JSON API — remote jobs)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchJobicy() {
+  try {
+    const res = await fetchWithTimeout('https://jobicy.com/api/v2/remote-jobs?count=50&industry=marketing&tag=vp,director,head,cmo', {
+      headers: { 'Accept': 'application/json' },
+    });
+    const data = await res.json();
+    return (data.jobs || []).filter(j => {
+      const t = (j.jobTitle || '').toLowerCase();
+      return t.includes('vp') || t.includes('vice president') || t.includes('head of') || t.includes('director') || t.includes('cmo') || t.includes('chief');
+    }).map(j => ({
+      source: 'Jobicy', title: j.jobTitle, company: j.companyName || '', location: j.jobGeo || 'Remote',
+      url: j.url || '', datePosted: j.pubDate || '', salary: j.annualSalaryMin ? `$${j.annualSalaryMin}-$${j.annualSalaryMax}` : '', query: 'marketing',
+    }));
+  } catch (err) { console.error(`  Jobicy error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 23. ARBEITNOW (free JSON API — remote jobs, no key needed)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchArbeitnow() {
+  try {
+    const res = await fetchWithTimeout('https://www.arbeitnow.com/api/job-board-api', {
+      headers: { 'Accept': 'application/json' },
+    });
+    const data = await res.json();
+    return (data.data || []).filter(j => {
+      const t = (j.title || '').toLowerCase();
+      const remote = j.remote === true || (j.location || '').toLowerCase().includes('remote');
+      const isMarketing = t.includes('marketing') || (j.tags || []).join(' ').toLowerCase().includes('marketing');
+      const isSenior = t.includes('vp') || t.includes('vice president') || t.includes('head of') || t.includes('director') || t.includes('cmo');
+      return remote && isMarketing && isSenior;
+    }).map(j => ({
+      source: 'Arbeitnow', title: j.title, company: j.company_name || '', location: j.location || 'Remote',
+      url: j.url || '', datePosted: j.created_at || '', salary: j.salary || '', query: 'marketing',
+    }));
+  } catch (err) { console.error(`  Arbeitnow error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 24. HIMALAYAS (free JSON API — remote jobs)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchHimalayas() {
+  try {
+    const res = await fetchWithTimeout('https://himalayas.app/jobs/api?categories=Marketing&limit=50', {
+      headers: { 'Accept': 'application/json' },
+    });
+    const data = await res.json();
+    return (data.jobs || []).filter(j => {
+      const t = (j.title || '').toLowerCase();
+      return t.includes('vp') || t.includes('vice president') || t.includes('head of') || t.includes('director') || t.includes('cmo') || t.includes('chief');
+    }).map(j => ({
+      source: 'Himalayas', title: j.title, company: j.companyName || '', location: 'Remote',
+      url: j.applicationUrl || `https://himalayas.app/jobs/${j.slug || ''}`, datePosted: j.pubDate || '',
+      salary: j.minSalary ? `$${j.minSalary}-$${j.maxSalary}` : '', query: 'marketing',
+    }));
+  } catch (err) { console.error(`  Himalayas error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 25. FINDWORK (free API — dev/marketing roles at startups)
+// ══════════════════════════════════════════════════════════════════════
+
+async function searchFindwork() {
+  try {
+    const res = await fetchWithTimeout('https://findwork.dev/api/jobs/?search=marketing+vp+director&remote=true&order_by=-date_posted', {
+      headers: { 'Accept': 'application/json' },
+    });
+    const data = await res.json();
+    return (data.results || []).filter(j => {
+      const t = (j.role || '').toLowerCase();
+      return t.includes('vp') || t.includes('vice president') || t.includes('head of') || t.includes('director') || t.includes('cmo');
+    }).map(j => ({
+      source: 'Findwork', title: j.role, company: j.company_name || '', location: j.location || 'Remote',
+      url: j.url || '', datePosted: j.date_posted || '', salary: '', query: 'marketing',
+    }));
+  } catch (err) { console.error(`  Findwork error: ${err.message}`); return []; }
+}
+
+// ══════════════════════════════════════════════════════════════════════
 // MAIN ORCHESTRATOR
 // ══════════════════════════════════════════════════════════════════════
 
@@ -658,7 +769,7 @@ async function searchAllSources(queries = SEARCH_QUERIES) {
   }
 
   // ── Wave 1: API-based sources (fast, most reliable) ──
-  console.log('  Wave 1: APIs (RemoteOK, Greenhouse 200+, Lever 60+, TheMuse, WorkingNomads)');
+  console.log('  Wave 1: APIs (RemoteOK, Greenhouse 200+, Lever 60+, TheMuse, WorkingNomads, Remotive, Jobicy, Arbeitnow, Himalayas, Findwork)');
   const wave1 = await Promise.all([
     searchRemoteOK(),
     searchGreenhouseBoards(),
@@ -666,6 +777,11 @@ async function searchAllSources(queries = SEARCH_QUERIES) {
     searchTheMuse(),
     searchWorkingNomads(),
     searchWellfound(),
+    searchRemotive(),
+    searchJobicy(),
+    searchArbeitnow(),
+    searchHimalayas(),
+    searchFindwork(),
   ]);
   wave1.forEach(addJobs);
   console.log(`  → Wave 1: ${allJobs.length} jobs`);
